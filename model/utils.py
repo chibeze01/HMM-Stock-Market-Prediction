@@ -1,31 +1,173 @@
-import yfinance as yf
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, Sequence, Tuple
+
 import numpy as np
 import pandas as pd
 
-def fetch_stock_data(ticker, start_date, end_date):
-    """
-    Fetches historical stock data from Yahoo Finance.
-    """
-    data = yf.download(ticker, start=start_date, end=end_date)
-    return data
+DATA_CACHE_DIR = Path(__file__).resolve().parents[1] / "data_cache"
+DATA_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-def preprocess_data(data):
+ALLOWED_FEATURES = {"returns", "volatility", "momentum"}
+
+
+@dataclass(frozen=True)
+class PreprocessingConfig:
+    """
+    Configuration for making features and state buckets.
+    """
+
+    return_bins: Tuple[float, ...] = (
+        -np.inf,
+        -0.01,
+        0,
+        0.01,
+        np.inf,
+    )
+    features: Tuple[str, ...] = ("returns", "volatility")
+    volatility_window: int = 5
+    momentum_window: int = 3
+
+    def __post_init__(self):
+        if not self.features:
+            raise ValueError("At least one feature must be specified.")
+        if any(a >= b for a, b in zip(self.return_bins, self.return_bins[1:])):
+            raise ValueError("return_bins must be strictly increasing.")
+        unknown = set(self.features) - ALLOWED_FEATURES
+        if unknown:
+            raise ValueError(f"Unknown feature names: {', '.join(sorted(unknown))}")
+        if self.volatility_window < 2:
+            raise ValueError("volatility_window must be >= 2.")
+        if self.momentum_window < 2:
+            raise ValueError("momentum_window must be >= 2.")
+
+
+@dataclass(frozen=True)
+class PreprocessedData:
+    frame: pd.DataFrame
+    features: np.ndarray
+    states: np.ndarray
+
+
+def _validate_dates(start_date, end_date) -> Tuple[pd.Timestamp, pd.Timestamp]:
+    start_ts = pd.Timestamp(start_date).normalize()
+    end_ts = pd.Timestamp(end_date).normalize()
+    if start_ts >= end_ts:
+        raise ValueError("start_date must be earlier than end_date.")
+    return start_ts, end_ts
+
+
+def _validate_ticker(ticker: str) -> str:
+    if not ticker or not ticker.strip():
+        raise ValueError("ticker must be a non-empty string.")
+    return ticker.upper().strip()
+
+
+def _cache_path(ticker: str, start_ts: pd.Timestamp, end_ts: pd.Timestamp) -> Path:
+    safe_ticker = ticker.replace("/", "_")
+    return DATA_CACHE_DIR / f"{safe_ticker}_{start_ts:%Y%m%d}_{end_ts:%Y%m%d}.csv"
+
+
+def fetch_stock_data(
+    ticker: str,
+    start_date,
+    end_date,
+    *,
+    force_refresh: bool = False,
+    max_retries: int = 3,
+    retry_backoff: float = 1.5,
+) -> pd.DataFrame:
+    """
+    Fetches historical stock data with validation, retry logic, and deterministic caching.
+    """
+    normalized_ticker = _validate_ticker(ticker)
+    start_ts, end_ts = _validate_dates(start_date, end_date)
+    cache_file = _cache_path(normalized_ticker, start_ts, end_ts)
+
+    if cache_file.exists() and not force_refresh:
+        return pd.read_csv(cache_file, index_col=0, parse_dates=True)
+
+    try:
+        import yfinance as yf
+    except ImportError as exc:  # pragma: no cover - import guard
+        raise RuntimeError(
+            "yfinance is required to download stock data. Install it via pip."
+        ) from exc
+
+    last_error: Optional[Exception] = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            data = yf.download(normalized_ticker, start=start_ts, end=end_ts)
+            if data.empty:
+                raise ValueError(f"No data returned for {normalized_ticker}.")
+            data.to_csv(cache_file)
+            return data
+        except Exception as exc:  # noqa: BLE001 - capture all download errors
+            last_error = exc
+            if attempt == max_retries:
+                break
+            time.sleep(retry_backoff * attempt)
+
+    raise RuntimeError(
+        f"Failed to fetch data for {normalized_ticker} between {start_ts} and {end_ts}."
+    ) from last_error
+
+
+def _compute_features(frame: pd.DataFrame, config: PreprocessingConfig) -> Sequence[str]:
+    frame["Returns"] = frame["Close"].pct_change()
+    feature_columns = []
+    if "returns" in config.features:
+        feature_columns.append("Returns")
+    if "volatility" in config.features:
+        frame["Volatility"] = (
+            frame["Returns"]
+            .rolling(window=config.volatility_window)
+            .std()
+        )
+        feature_columns.append("Volatility")
+    if "momentum" in config.features:
+        frame["Momentum"] = (
+            frame["Returns"]
+            .rolling(window=config.momentum_window)
+            .mean()
+        )
+        feature_columns.append("Momentum")
+    return feature_columns
+
+
+def preprocess_data(
+    data: pd.DataFrame, config: Optional[PreprocessingConfig] = None
+) -> PreprocessedData:
     """
     Preprocesses the stock data for the HMM model.
     """
-    # Calculate daily returns
-    data['Returns'] = data['Close'].pct_change()
+    if "Close" not in data.columns:
+        raise ValueError("Input data must contain a 'Close' column.")
 
-    # Drop missing values
-    data.dropna(inplace=True)
+    cfg = config or PreprocessingConfig()
+    working = data.copy(deep=True)
+    feature_columns = _compute_features(working, cfg)
 
-    # Discretize the returns into a number of states
-    # For this example, we'll use 4 states:
-    # 0: large drop
-    # 1: small drop
-    # 2: small rise
-    # 3: large rise
-    bins = [-np.inf, -0.01, 0, 0.01, np.inf]
-    data['State'] = pd.cut(data['Returns'], bins=bins, labels=False)
+    working["State"] = pd.cut(working["Returns"], bins=cfg.return_bins, labels=False)
+    processed = working.dropna(subset=feature_columns + ["State"]).copy()
 
-    return data, data['State'].values.reshape(-1, 1)
+    states = processed["State"].to_numpy(dtype=int).reshape(-1, 1)
+    feature_matrix = processed[feature_columns].to_numpy()
+
+    return PreprocessedData(processed, feature_matrix, states)
+
+
+def merge_preprocessed(*bundles: PreprocessedData) -> PreprocessedData:
+    """
+    Concatenates multiple PreprocessedData objects chronologically.
+    """
+    if not bundles:
+        raise ValueError("At least one PreprocessedData object is required.")
+    frames = [bundle.frame for bundle in bundles]
+    features = [bundle.features for bundle in bundles]
+    states = [bundle.states for bundle in bundles]
+    merged_frame = pd.concat(frames).sort_index().copy()
+    merged_features = np.vstack(features)
+    merged_states = np.vstack(states)
+    return PreprocessedData(merged_frame, merged_features, merged_states)

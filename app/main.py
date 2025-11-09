@@ -1,110 +1,293 @@
-import streamlit as st
-import datetime
-import pandas as pd
-import sys
+import datetime as dt
 import os
+import sys
+from typing import Dict, Tuple
+
+import numpy as np
+import pandas as pd
+import streamlit as st
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from model.utils import fetch_stock_data, preprocess_data
-from model.hmm import HMMStockPredictor
+from model.evaluation import EvaluationBundle, run_evaluation
+from model.hmm import HMMConfig, HMMStockPredictor, TrainingSummary
+from model.utils import (
+    PreprocessedData,
+    PreprocessingConfig,
+    fetch_stock_data,
+    merge_preprocessed,
+    preprocess_data,
+)
 
-# --- App Configuration ---
 st.set_page_config(page_title="HMM Stock Predictor", layout="wide")
 
-# --- App State Initialization ---
-if 'model' not in st.session_state:
-    st.session_state['model'] = None
-if 'data' not in st.session_state:
-    st.session_state['data'] = None
-if 'states' not in st.session_state:
-    st.session_state['states'] = None
 
-# --- UI Components ---
+def initialize_session_state() -> None:
+    defaults = {
+        "model": None,
+        "preprocessed": None,
+        "evaluation": None,
+        "training_summary": None,
+        "training_window": None,
+        "preprocess_config": None,
+        "model_config": None,
+        "ticker": None,
+        "run_history": [],
+        "last_prediction": None,
+    }
+    for key, value in defaults.items():
+        st.session_state.setdefault(key, value)
+
+
+def reset_app() -> None:
+    st.session_state.clear()
+    st.experimental_rerun()
+
+
+def describe_state(summary: pd.DataFrame, state_id: int) -> str:
+    if summary is None or state_id not in summary.index:
+        return f"State {state_id}"
+    mean_return = summary.loc[state_id, "mean_return"]
+    volatility = summary.loc[state_id, "volatility"]
+    direction = "bullish" if mean_return > 0 else "bearish"
+    return (
+        f"State {state_id}: {direction} "
+        f"(avg return {mean_return:.2%}, volatility {volatility:.2%})"
+    )
+
+
+def ensure_enough_observations(observations: np.ndarray, config: HMMConfig) -> None:
+    if observations.shape[0] < config.n_hidden_states * 3:
+        raise ValueError(
+            f"Need at least {config.n_hidden_states * 3} observations "
+            "before training. Try expanding the date range."
+        )
+
+
+initialize_session_state()
+
 st.title("HMM Stock Market Predictor")
+st.caption("End-to-end workflow for training, fine-tuning, and interpreting a regime model.")
 
-st.sidebar.header("Model Configuration")
-ticker = st.sidebar.text_input("Stock Ticker", "GOOGL")
-start_date = st.sidebar.date_input("Training Start Date", datetime.date(2020, 1, 1))
-end_date = st.sidebar.date_input("Training End Date", datetime.date(2023, 12, 31))
+# Sidebar controls ------------------------------------------------------------------
+st.sidebar.header("Data Configuration")
+ticker = st.sidebar.text_input("Stock Ticker", st.session_state["ticker"] or "GOOGL").upper()
+start_date = st.sidebar.date_input(
+    "Training Start Date",
+    st.session_state["training_window"][0]
+    if st.session_state["training_window"]
+    else dt.date(2020, 1, 1),
+)
+end_date = st.sidebar.date_input(
+    "Training End Date",
+    st.session_state["training_window"][1]
+    if st.session_state["training_window"]
+    else dt.date(2023, 12, 31),
+)
 
-if st.sidebar.button("Train Initial Model"):
-    with st.spinner("Fetching data and training model..."):
-        # Fetch and process data
-        data = fetch_stock_data(ticker, start_date, end_date)
-        processed_data, states = preprocess_data(data)
+feature_labels = {
+    "Daily Returns": "returns",
+    "Rolling Volatility": "volatility",
+    "Momentum": "momentum",
+}
+selected_feature_labels = st.sidebar.multiselect(
+    "Features for Observations",
+    options=list(feature_labels.keys()),
+    default=["Daily Returns", "Rolling Volatility"],
+)
+selected_features = tuple(feature_labels[label] for label in selected_feature_labels)
 
-        st.session_state['data'] = processed_data
-        st.session_state['states'] = states
+vol_window = st.sidebar.slider("Volatility Window", min_value=3, max_value=30, value=5)
+mom_window = st.sidebar.slider("Momentum Window", min_value=3, max_value=30, value=3)
 
-        # Train HMM model
-        model = HMMStockPredictor()
-        model.train(states)
-        st.session_state['model'] = model
+st.sidebar.header("Model Parameters")
+hidden_states = st.sidebar.slider("Hidden States", min_value=2, max_value=8, value=4)
+covariance_type = st.sidebar.selectbox(
+    "Covariance Type", options=["diag", "full", "spherical", "tied"], index=0
+)
+n_iter = st.sidebar.slider("Training Iterations", min_value=100, max_value=2000, value=500, step=50)
+random_state = st.sidebar.number_input("Random Seed", value=42)
 
-        st.sidebar.success("Model trained successfully!")
+st.sidebar.divider()
+reset_clicked = st.sidebar.button("Reset Session", use_container_width=True, on_click=reset_app)
 
-st.header("Model Status")
-if st.session_state['model'] is None:
-    st.info("The model has not been trained yet. Please train the model using the sidebar.")
-else:
-    st.success("Model is trained and ready.")
+train_clicked = st.sidebar.button("Train / Re-train Model", use_container_width=True)
 
-    # --- Fine-Tuning Section ---
-    st.sidebar.header("Fine-Tune Model")
-    fine_tune_end_date = st.sidebar.date_input("Fine-Tune with Data Up To", datetime.date.today())
+st.sidebar.header("Fine-Tune")
+fine_tune_end_date = st.sidebar.date_input("Extend data up to", dt.date.today())
+fine_tune_clicked = st.sidebar.button("Fine-Tune with Recent Data", use_container_width=True)
 
-    if st.sidebar.button("Fine-Tune on Recent Data"):
-        if st.session_state['model'] is None:
-            st.sidebar.error("Train an initial model first.")
-        else:
-            with st.spinner("Fetching recent data and fine-tuning model..."):
-                # Fetch recent data
-                recent_data = fetch_stock_data(ticker, end_date, fine_tune_end_date)
 
-                if not recent_data.empty:
-                    # Preprocess recent data
-                    processed_recent_data, new_states = preprocess_data(recent_data)
+def train_pipeline(
+    ticker_symbol: str,
+    start: dt.date,
+    end: dt.date,
+    preprocess_cfg: PreprocessingConfig,
+    model_cfg: HMMConfig,
+) -> Tuple[HMMStockPredictor, PreprocessedData, EvaluationBundle, TrainingSummary]:
+    raw = fetch_stock_data(ticker_symbol, start, end)
+    dataset = preprocess_data(raw, preprocess_cfg)
+    ensure_enough_observations(dataset.features, model_cfg)
+    predictor = HMMStockPredictor(model_cfg)
+    summary = predictor.train(dataset.features)
+    evaluation = run_evaluation(predictor, dataset.frame, dataset.features)
+    return predictor, dataset, evaluation, summary
 
-                    # Fine-tune the model
-                    st.session_state['model'].fine_tune(new_states)
 
-                    # Update data in session state
-                    st.session_state['data'] = pd.concat([st.session_state['data'], processed_recent_data])
-                    st.session_state['states'] = pd.concat([pd.DataFrame(st.session_state['states']), pd.DataFrame(new_states)]).values
-
-                    st.sidebar.success("Model fine-tuned successfully!")
-                else:
-                    st.sidebar.warning("No new data available for fine-tuning.")
-
-    # --- Prediction Section ---
-    st.header("Prediction")
-    if st.button("Predict Next Day's Market Movement"):
-        if st.session_state['model'] is None:
-            st.error("Please train a model before making predictions.")
-        else:
-            with st.spinner("Making prediction..."):
-                # Use all available states for prediction
-                all_states = st.session_state['states']
-
-                # Predict the next state
-                predicted_state = st.session_state['model'].predict_next_day_state(all_states)
-
-                # Interpret the state
-                state_interpretation = {
-                    0: "Large Drop",
-                    1: "Small Drop",
-                    2: "Small Rise",
-                    3: "Large Rise"
+if train_clicked:
+    if not selected_features:
+        st.sidebar.error("Select at least one feature before training.")
+    else:
+        try:
+            preprocess_cfg = PreprocessingConfig(
+                features=selected_features,
+                volatility_window=vol_window,
+                momentum_window=mom_window,
+            )
+            model_cfg = HMMConfig(
+                n_hidden_states=hidden_states,
+                covariance_type=covariance_type,
+                n_iter=n_iter,
+                random_state=int(random_state),
+            )
+            with st.spinner("Training model..."):
+                model, dataset, evaluation, summary = train_pipeline(
+                    ticker, start_date, end_date, preprocess_cfg, model_cfg
+                )
+            st.session_state.update(
+                {
+                    "model": model,
+                    "preprocessed": dataset,
+                    "evaluation": evaluation,
+                    "training_summary": summary,
+                    "training_window": (start_date, end_date),
+                    "preprocess_config": preprocess_cfg,
+                    "model_config": model_cfg,
+                    "ticker": ticker,
+                    "run_history": [
+                        {
+                            "type": "train",
+                            "summary": summary,
+                            "window": (start_date, end_date),
+                        }
+                    ],
+                    "last_prediction": None,
                 }
+            )
+            st.sidebar.success("Model trained successfully.")
+        except Exception as exc:  # noqa: BLE001
+            st.sidebar.error(f"Training failed: {exc}")
 
-                st.write(f"### Predicted Market Movement: **{state_interpretation.get(predicted_state, 'Unknown')}**")
 
-# --- Data Display ---
-st.header("Stock Data")
-if st.session_state['data'] is not None:
-    st.dataframe(st.session_state['data'].tail(10))
-    st.line_chart(st.session_state['data']['Close'])
+if fine_tune_clicked:
+    if st.session_state["model"] is None or st.session_state["preprocessed"] is None:
+        st.sidebar.error("Train a model before fine-tuning.")
+    else:
+        current_end = st.session_state["training_window"][1]
+        fine_tune_start = current_end + dt.timedelta(days=1)
+        if fine_tune_end_date <= fine_tune_start:
+            st.sidebar.warning("Choose an end date after the latest trained date.")
+        else:
+            try:
+                preprocess_cfg = st.session_state["preprocess_config"]
+                with st.spinner("Fine-tuning with latest data..."):
+                    new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
+                    new_dataset = preprocess_data(new_raw, preprocess_cfg)
+                    if new_dataset.features.size == 0:
+                        raise ValueError("No usable new data was returned for this window.")
+                    combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
+                    summary = st.session_state["model"].fine_tune(combined.features)
+                    evaluation = run_evaluation(
+                        st.session_state["model"], combined.frame, combined.features
+                    )
+                st.session_state.update(
+                    {
+                        "preprocessed": combined,
+                        "evaluation": evaluation,
+                        "training_summary": summary,
+                        "training_window": (st.session_state["training_window"][0], fine_tune_end_date),
+                    }
+                )
+                history = st.session_state["run_history"]
+                history.append(
+                    {"type": "fine-tune", "summary": summary, "window": (fine_tune_start, fine_tune_end_date)}
+                )
+                st.sidebar.success("Fine-tuning complete.")
+            except Exception as exc:  # noqa: BLE001
+                st.sidebar.error(f"Fine-tuning failed: {exc}")
+
+
+# Main layout -----------------------------------------------------------------------
+if st.session_state["model"] is None:
+    st.info("Train the model using the controls on the left to unlock evaluation and predictions.")
 else:
-    st.info("No data loaded yet.")
+    summary = st.session_state["training_summary"]
+    dataset = st.session_state["preprocessed"]
+    evaluation = st.session_state["evaluation"]
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Ticker", st.session_state["ticker"])
+    col2.metric("Observations", dataset.features.shape[0])
+    col3.metric("Hidden States", st.session_state["model_config"].n_hidden_states)
+    col4.metric("Log Likelihood", f"{summary.log_likelihood:.2f}")
+
+    st.subheader("Training & Fine-Tune History")
+    history_rows = []
+    for record in st.session_state["run_history"]:
+        row = {
+            "Type": record["type"],
+            "Window": f"{record['window'][0]} → {record['window'][1]}",
+            "Timestamp (UTC)": record["summary"].timestamp.strftime("%Y-%m-%d %H:%M"),
+            "Log Likelihood": round(record["summary"].log_likelihood, 2),
+            "Samples": record["summary"].n_samples,
+        }
+        history_rows.append(row)
+    history_df = pd.DataFrame(history_rows)
+    st.dataframe(history_df, use_container_width=True, height=180)
+
+    st.subheader("Evaluation")
+    eval_tabs = st.tabs(["Regime Summary", "Rolling Accuracy", "Log Likelihood"])
+    with eval_tabs[0]:
+        st.dataframe(
+            evaluation.regime_summary.style.format(
+                {"mean_return": "{:.2%}", "volatility": "{:.2%}", "avg_close": "{:.2f}"}
+            ),
+            use_container_width=True,
+        )
+    with eval_tabs[1]:
+        if evaluation.rolling_accuracy.empty:
+            st.info("Rolling accuracy series will appear once enough data is available.")
+        else:
+            st.line_chart(evaluation.rolling_accuracy)
+    with eval_tabs[2]:
+        if evaluation.rolling_log_likelihood.empty:
+            st.info("Rolling log-likelihood requires additional observations.")
+        else:
+            st.line_chart(evaluation.rolling_log_likelihood)
+
+    st.subheader("Prediction")
+    if st.button("Predict Next Regime"):
+        try:
+            predicted_state = st.session_state["model"].predict_next_day_state(dataset.features)
+            proba = st.session_state["model"].regime_probabilities(dataset.features)[-1]
+            message = describe_state(evaluation.regime_summary, predicted_state)
+            st.session_state["last_prediction"] = {
+                "state": predicted_state,
+                "probabilities": proba,
+                "message": message,
+            }
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"Prediction failed: {exc}")
+
+    if st.session_state["last_prediction"]:
+        pred = st.session_state["last_prediction"]
+        st.success(f"Predicted next regime: {pred['message']}")
+        prob_df = pd.DataFrame(
+            {"State": list(range(len(pred["probabilities"]))), "Probability": pred["probabilities"]}
+        ).set_index("State")
+        st.bar_chart(prob_df)
+
+    st.subheader("Recent Data")
+    st.dataframe(dataset.frame.tail(10), use_container_width=True)
+    st.line_chart(dataset.frame["Close"])
