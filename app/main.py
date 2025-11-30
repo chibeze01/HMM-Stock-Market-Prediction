@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 import os
 import sys
 from typing import Dict, Tuple
@@ -12,6 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from model.evaluation import EvaluationBundle, run_evaluation
 from model.hmm import HMMConfig, HMMStockPredictor, TrainingSummary
+from model.logging_utils import LOG_FILE, configure_logging
 from model.utils import (
     PreprocessedData,
     PreprocessingConfig,
@@ -21,6 +23,16 @@ from model.utils import (
 )
 
 st.set_page_config(page_title="HMM Stock Predictor", layout="wide")
+configure_logging()
+logger = logging.getLogger(__name__)
+
+
+class StreamlitLogHandler(logging.Handler):
+    def emit(self, record):
+        msg = self.format(record)
+        logs = st.session_state.get("log_messages", [])
+        logs.append(msg)
+        st.session_state["log_messages"] = logs[-500:]
 
 
 def initialize_session_state() -> None:
@@ -35,6 +47,8 @@ def initialize_session_state() -> None:
         "ticker": None,
         "run_history": [],
         "last_prediction": None,
+        "log_messages": [],
+        "_streamlit_log_attached": False,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -42,6 +56,7 @@ def initialize_session_state() -> None:
 
 def reset_app() -> None:
     st.session_state.clear()
+    logger.info("Session reset triggered by user.")
     st.experimental_rerun()
 
 
@@ -66,6 +81,12 @@ def ensure_enough_observations(observations: np.ndarray, config: HMMConfig) -> N
 
 
 initialize_session_state()
+
+if not st.session_state["_streamlit_log_attached"]:
+    handler = StreamlitLogHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s"))
+    logging.getLogger().addHandler(handler)
+    st.session_state["_streamlit_log_attached"] = True
 
 st.title("HMM Stock Market Predictor")
 st.caption("End-to-end workflow for training, fine-tuning, and interpreting a regime model.")
@@ -102,7 +123,13 @@ vol_window = st.sidebar.slider("Volatility Window", min_value=3, max_value=30, v
 mom_window = st.sidebar.slider("Momentum Window", min_value=3, max_value=30, value=3)
 
 st.sidebar.header("Model Parameters")
-hidden_states = st.sidebar.slider("Hidden States", min_value=2, max_value=8, value=4)
+hidden_states = st.sidebar.slider(
+    "Hidden States",
+    min_value=2,
+    max_value=8,
+    value=4,
+    help="Choose how many latent regimes the HMM should learn (higher values capture more nuanced behaviors but need more data).",
+)
 covariance_type = st.sidebar.selectbox(
     "Covariance Type", options=["diag", "full", "spherical", "tied"], index=0
 )
@@ -155,6 +182,14 @@ if train_clicked:
                 model, dataset, evaluation, summary = train_pipeline(
                     ticker, start_date, end_date, preprocess_cfg, model_cfg
                 )
+            logger.info(
+                "Training succeeded for %s (%s → %s) states=%s features=%s",
+                ticker,
+                start_date,
+                end_date,
+                hidden_states,
+                selected_features,
+            )
             st.session_state.update(
                 {
                     "model": model,
@@ -177,6 +212,7 @@ if train_clicked:
             )
             st.sidebar.success("Model trained successfully.")
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Training failed: %s", exc)
             st.sidebar.error(f"Training failed: {exc}")
 
 
@@ -201,6 +237,12 @@ if fine_tune_clicked:
                     evaluation = run_evaluation(
                         st.session_state["model"], combined.frame, combined.features
                     )
+                logger.info(
+                    "Fine-tuned model for %s adding window %s → %s",
+                    ticker,
+                    fine_tune_start,
+                    fine_tune_end_date,
+                )
                 st.session_state.update(
                     {
                         "preprocessed": combined,
@@ -215,6 +257,7 @@ if fine_tune_clicked:
                 )
                 st.sidebar.success("Fine-tuning complete.")
             except Exception as exc:  # noqa: BLE001
+                logger.exception("Fine-tuning failed: %s", exc)
                 st.sidebar.error(f"Fine-tuning failed: {exc}")
 
 
@@ -277,7 +320,9 @@ else:
                 "probabilities": proba,
                 "message": message,
             }
+            logger.info("Generated prediction state=%s probability=%.2f", predicted_state, proba.max())
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Prediction failed: %s", exc)
             st.error(f"Prediction failed: {exc}")
 
     if st.session_state["last_prediction"]:
@@ -291,3 +336,11 @@ else:
     st.subheader("Recent Data")
     st.dataframe(dataset.frame.tail(10), use_container_width=True)
     st.line_chart(dataset.frame["Close"])
+
+st.subheader("Debug Logs")
+logs_display = st.session_state.get("log_messages", [])
+if logs_display:
+    st.code("\n".join(logs_display[-200:]), language="text")
+else:
+    st.caption("Logs will appear here after actions are taken.")
+st.caption(f"Full log file written to: {LOG_FILE}")

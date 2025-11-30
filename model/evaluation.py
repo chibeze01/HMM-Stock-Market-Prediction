@@ -7,6 +7,9 @@ import numpy as np
 import pandas as pd
 
 from .hmm import HMMStockPredictor
+from .logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,7 @@ def compute_regime_summary(frame: pd.DataFrame, hidden_states: np.ndarray) -> pd
         )
         .sort_index()
     )
+    logger.debug("Computed regime summary for %s states", summary.shape[0])
     return summary
 
 
@@ -64,12 +68,14 @@ def rolling_directional_accuracy(
     predicted_direction = np.vectorize(direction_map.get)(hidden_states.flatten())
     realized_direction = np.sign(frame["Returns"])
     accuracy = (predicted_direction == np.sign(realized_direction)).astype(int)
-    return (
+    result = (
         pd.Series(accuracy, index=frame.index)
         .rolling(window=window)
         .mean()
         .dropna()
     )
+    logger.debug("Calculated rolling accuracy window=%s points=%s", window, result.shape[0])
+    return result
 
 
 def rolling_log_likelihood(
@@ -84,12 +90,14 @@ def rolling_log_likelihood(
         raise AttributeError("Model must provide _compute_log_likelihood.")
     log_likelihood = model.model._compute_log_likelihood(X)
     per_sample = np.logaddexp.reduce(log_likelihood, axis=1)
-    return (
+    series = (
         pd.Series(per_sample, index=index)
         .rolling(window=window)
         .mean()
         .dropna()
     )
+    logger.debug("Computed rolling log-likelihood window=%s points=%s", window, series.shape[0])
+    return series
 
 
 def run_evaluation(
@@ -106,4 +114,10 @@ def run_evaluation(
     regime_df = compute_regime_summary(frame, hidden_states)
     accuracy = rolling_directional_accuracy(frame, hidden_states, window=window)
     log_like = rolling_log_likelihood(model, features, frame.index, window=window)
+    logger.info(
+        "Evaluation completed: regimes=%s accuracy_points=%s loglike_points=%s",
+        regime_df.shape[0],
+        accuracy.shape[0],
+        log_like.shape[0],
+    )
     return EvaluationBundle(regime_df, accuracy, log_like)

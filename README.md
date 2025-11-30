@@ -70,6 +70,13 @@ tests/              # Unit & smoke tests
   ```
   (See `Dockerfile` for details; container exposes Streamlit on port 8501.)
 
+## Logging & Troubleshooting
+- All modules emit structured logs (both console and `logs/app.log`) via the centralized
+  helper in `model/logging_utils.py`.
+- The Streamlit UI shows the most recent log lines under **Debug Logs**; open the
+  expander to quickly trace failures that happened during training/fine-tuning.
+- Adjust verbosity by setting `LOG_LEVEL` (e.g., `LOG_LEVEL=DEBUG streamlit run app/main.py`).
+
 ## Troubleshooting
 - **No data returned**: Ensure the ticker/date range is valid and markets were open.
 - **Insufficient observations**: Expand the training window or reduce the number of hidden states.

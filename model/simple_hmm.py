@@ -3,6 +3,10 @@ from typing import Tuple
 
 import numpy as np
 
+from .logging_utils import get_logger
+
+logger = get_logger(__name__)
+
 
 def _stable_inverse(matrix: np.ndarray) -> np.ndarray:
     try:
@@ -70,6 +74,7 @@ class GaussianHMM:
 
     def fit(self, X: np.ndarray) -> "GaussianHMM":
         X = np.asarray(X, dtype=float)
+        logger.debug("Fallback GaussianHMM fitting on %s samples", len(X))
         means = self._init_means(X)
         for _ in range(self.n_iter // 5):
             labels = self._assign_clusters(X, means)
@@ -88,6 +93,7 @@ class GaussianHMM:
         start_counts = np.bincount(labels, minlength=self.n_components)
         self.startprob_ = start_counts / start_counts.sum()
         self._fitted = True
+        logger.info("Fallback GaussianHMM fitted with %s states", self.n_components)
         return self
 
     def _check_fitted(self):
@@ -97,7 +103,9 @@ class GaussianHMM:
     def predict(self, X: np.ndarray) -> np.ndarray:
         self._check_fitted()
         X = np.asarray(X)
-        return self._assign_clusters(X, self.means_)
+        states = self._assign_clusters(X, self.means_)
+        logger.debug("Fallback GaussianHMM predicted %s states", len(states))
+        return states
 
     def _compute_log_likelihood(self, X: np.ndarray) -> np.ndarray:
         self._check_fitted()

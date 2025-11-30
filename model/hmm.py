@@ -6,6 +6,8 @@ from typing import List, Optional, Union
 
 import numpy as np
 
+from .logging_utils import get_logger
+
 try:  # pragma: no cover - prefer hmmlearn when available
     from hmmlearn.hmm import GaussianHMM
 except ImportError:  # pragma: no cover - fallback for offline environments
@@ -48,6 +50,7 @@ class HMMStockPredictor:
         self.model = self._build_model()
         self.training_history: List[TrainingSummary] = []
         self._X_history: Optional[np.ndarray] = None
+        self.logger = get_logger(self.__class__.__name__)
 
     def _build_model(self) -> GaussianHMM:
         return GaussianHMM(
@@ -65,6 +68,9 @@ class HMMStockPredictor:
         """
         Trains the HMM model on the provided training data.
         """
+        self.logger.info(
+            "Training HMM with %s samples and config=%s", X_train.shape[0], self.config
+        )
         self.model = self._build_model()
         self.model.fit(X_train)
         self._X_history = np.array(X_train, copy=True)
@@ -74,6 +80,9 @@ class HMMStockPredictor:
             n_samples=X_train.shape[0],
         )
         self.training_history.append(summary)
+        self.logger.info(
+            "Training finished. LogLik=%.2f Samples=%s", summary.log_likelihood, summary.n_samples
+        )
         return summary
 
     def fine_tune(self, X_new: np.ndarray, retain_history: bool = True) -> TrainingSummary:
@@ -84,6 +93,7 @@ class HMMStockPredictor:
             data = np.vstack([self._X_history, X_new])
         else:
             data = X_new
+        self.logger.info("Fine-tuning with %s new samples retain_history=%s", X_new.shape[0], retain_history)
         return self.train(data)
 
     def predict_next_day_state(self, X: np.ndarray) -> int:
@@ -94,6 +104,9 @@ class HMMStockPredictor:
         hidden_states = self.model.predict(X)
         last_hidden_state = hidden_states[-1]
         most_likely_next_state = np.argmax(self.model.transmat_[last_hidden_state])
+        self.logger.debug(
+            "Predicted next state %s from last hidden state %s", most_likely_next_state, last_hidden_state
+        )
         return int(most_likely_next_state)
 
     def regime_probabilities(self, X: np.ndarray) -> np.ndarray:
@@ -101,7 +114,9 @@ class HMMStockPredictor:
         Returns posterior probabilities for each state over the provided timeline.
         """
         self._ensure_fitted()
-        return self.model.predict_proba(X)
+        probabilities = self.model.predict_proba(X)
+        self.logger.debug("Computed regime probabilities for %s samples", len(probabilities))
+        return probabilities
 
     def save(self, path: Union[Path, str]) -> Path:
         """
@@ -116,6 +131,7 @@ class HMMStockPredictor:
         }
         with open(target, "wb") as fh:
             pickle.dump(payload, fh)
+        self.logger.info("Saved HMM model to %s", target)
         return target
 
     @classmethod
@@ -125,4 +141,5 @@ class HMMStockPredictor:
         predictor = cls(HMMConfig(**payload["config"]))
         predictor.model = payload["model"]
         predictor.training_history = payload.get("training_history", [])
+        predictor.logger.info("Loaded HMM model from %s", path)
         return predictor

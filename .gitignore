@@ -11,3 +11,6 @@ __pycache__/
 .venv
 env/
 venv/
+
+## data caches
+data_cache/

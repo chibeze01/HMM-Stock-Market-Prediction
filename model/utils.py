@@ -6,10 +6,13 @@ from typing import Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
+from .logging_utils import get_logger
+
 DATA_CACHE_DIR = Path(__file__).resolve().parents[1] / "data_cache"
 DATA_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_FEATURES = {"returns", "volatility", "momentum"}
+logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -86,6 +89,9 @@ def fetch_stock_data(
     cache_file = _cache_path(normalized_ticker, start_ts, end_ts)
 
     if cache_file.exists() and not force_refresh:
+        logger.info(
+            "Loading cached prices for %s (%s → %s)", normalized_ticker, start_ts.date(), end_ts.date()
+        )
         return pd.read_csv(cache_file, index_col=0, parse_dates=True)
 
     try:
@@ -95,6 +101,13 @@ def fetch_stock_data(
             "yfinance is required to download stock data. Install it via pip."
         ) from exc
 
+    logger.info(
+        "Downloading prices for %s (%s → %s) force_refresh=%s",
+        normalized_ticker,
+        start_ts.date(),
+        end_ts.date(),
+        force_refresh,
+    )
     last_error: Optional[Exception] = None
     for attempt in range(1, max_retries + 1):
         try:
@@ -102,9 +115,13 @@ def fetch_stock_data(
             if data.empty:
                 raise ValueError(f"No data returned for {normalized_ticker}.")
             data.to_csv(cache_file)
+            logger.info("Downloaded %s rows for %s", len(data), normalized_ticker)
             return data
         except Exception as exc:  # noqa: BLE001 - capture all download errors
             last_error = exc
+            logger.warning(
+                "Attempt %s/%s failed for %s: %s", attempt, max_retries, normalized_ticker, exc
+            )
             if attempt == max_retries:
                 break
             time.sleep(retry_backoff * attempt)
@@ -133,6 +150,7 @@ def _compute_features(frame: pd.DataFrame, config: PreprocessingConfig) -> Seque
             .mean()
         )
         feature_columns.append("Momentum")
+    logger.debug("Computed feature set %s", feature_columns)
     return feature_columns
 
 
@@ -147,6 +165,12 @@ def preprocess_data(
 
     cfg = config or PreprocessingConfig()
     working = data.copy(deep=True)
+    working["Close"] = pd.to_numeric(working["Close"], errors="coerce")
+    dropped = working["Close"].isna().sum()
+    if dropped:
+        logger.warning("Dropped %s rows with non-numeric Close values.", dropped)
+    working = working.dropna(subset=["Close"])
+
     feature_columns = _compute_features(working, cfg)
 
     working["State"] = pd.cut(working["Returns"], bins=cfg.return_bins, labels=False)
@@ -155,6 +179,11 @@ def preprocess_data(
     states = processed["State"].to_numpy(dtype=int).reshape(-1, 1)
     feature_matrix = processed[feature_columns].to_numpy()
 
+    logger.debug(
+        "Preprocessed dataset with columns=%s rows=%s",
+        feature_columns,
+        processed.shape[0],
+    )
     return PreprocessedData(processed, feature_matrix, states)
 
 
@@ -170,4 +199,5 @@ def merge_preprocessed(*bundles: PreprocessedData) -> PreprocessedData:
     merged_frame = pd.concat(frames).sort_index().copy()
     merged_features = np.vstack(features)
     merged_states = np.vstack(states)
+    logger.info("Merged %s preprocessed batches. Total rows=%s", len(bundles), merged_frame.shape[0])
     return PreprocessedData(merged_frame, merged_features, merged_states)
