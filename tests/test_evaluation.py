@@ -25,10 +25,19 @@ class EvaluationTests(unittest.TestCase):
     def setUp(self):
         np.random.seed(0)
         self.frame = _dummy_frame()
-        features = np.column_stack(
-            (self.frame["Returns"].values.reshape(-1, 1), self.frame["Returns"].values.reshape(-1, 1))
-        )
-        self.model = HMMStockPredictor(HMMConfig(n_hidden_states=2, n_iter=50))
+        # Ensure we have different data to force hmmlearn to identify both states
+        returns = self.frame["Returns"].values.reshape(-1, 1)
+        # Create a second feature that creates clear separation for 2 states
+        volatility = np.abs(returns)
+        # Force one state to have high returns and volatility
+        returns[:40] += 0.05
+        volatility[:40] += 0.02
+        # Force other state to have low returns and volatility
+        returns[40:] -= 0.05
+        volatility[40:] -= 0.02
+        features = np.column_stack((returns, volatility))
+
+        self.model = HMMStockPredictor(HMMConfig(n_hidden_states=2, n_iter=100))
         self.model.train(features)
         self.features = features
 
