@@ -2,7 +2,6 @@ import datetime as dt
 import logging
 import os
 import sys
-from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -96,15 +95,19 @@ st.sidebar.header("Data Configuration")
 ticker = st.sidebar.text_input("Stock Ticker", st.session_state["ticker"] or "GOOGL").upper()
 start_date = st.sidebar.date_input(
     "Training Start Date",
-    st.session_state["training_window"][0]
-    if st.session_state["training_window"]
-    else dt.date(2020, 1, 1),
+    (
+        st.session_state["training_window"][0]
+        if st.session_state["training_window"]
+        else dt.date(2020, 1, 1)
+    ),
 )
 end_date = st.sidebar.date_input(
     "Training End Date",
-    st.session_state["training_window"][1]
-    if st.session_state["training_window"]
-    else dt.date(2023, 12, 31),
+    (
+        st.session_state["training_window"][1]
+        if st.session_state["training_window"]
+        else dt.date(2023, 12, 31)
+    ),
 )
 
 feature_labels = {
@@ -116,6 +119,10 @@ selected_feature_labels = st.sidebar.multiselect(
     "Features for Observations",
     options=list(feature_labels.keys()),
     default=["Daily Returns", "Rolling Volatility"],
+    help=(
+        "Select the data inputs (features) that the Hidden Markov Model "
+        "will use to learn market regimes."
+    ),
 )
 selected_features = tuple(feature_labels[label] for label in selected_feature_labels)
 
@@ -128,7 +135,10 @@ hidden_states = st.sidebar.slider(
     min_value=2,
     max_value=8,
     value=4,
-    help="Choose how many latent regimes the HMM should learn (higher values capture more nuanced behaviors but need more data).",
+    help=(
+        "Choose how many latent regimes the HMM should learn (higher values "
+        "capture more nuanced behaviors but need more data)."
+    ),
 )
 covariance_type = st.sidebar.selectbox(
     "Covariance Type", options=["diag", "full", "spherical", "tied"], index=0
@@ -139,11 +149,29 @@ random_state = st.sidebar.number_input("Random Seed", value=42)
 st.sidebar.divider()
 reset_clicked = st.sidebar.button("Reset Session", use_container_width=True, on_click=reset_app)
 
-train_clicked = st.sidebar.button("Train / Re-train Model", use_container_width=True)
+train_clicked = st.sidebar.button(
+    "Train / Re-train Model",
+    use_container_width=True,
+    disabled=not selected_features,
+    help=(
+        "Select at least one feature to train the model."
+        if not selected_features
+        else "Train the model with the selected configuration."
+    ),
+)
 
 st.sidebar.header("Fine-Tune")
 fine_tune_end_date = st.sidebar.date_input("Extend data up to", dt.date.today())
-fine_tune_clicked = st.sidebar.button("Fine-Tune with Recent Data", use_container_width=True)
+fine_tune_clicked = st.sidebar.button(
+    "Fine-Tune with Recent Data",
+    use_container_width=True,
+    disabled=st.session_state["model"] is None,
+    help=(
+        "Train a model first before fine-tuning."
+        if st.session_state["model"] is None
+        else "Update the existing model with new data."
+    ),
+)
 
 
 def train_pipeline(
@@ -152,7 +180,7 @@ def train_pipeline(
     end: dt.date,
     preprocess_cfg: PreprocessingConfig,
     model_cfg: HMMConfig,
-) -> Tuple[HMMStockPredictor, PreprocessedData, EvaluationBundle, TrainingSummary]:
+) -> tuple[HMMStockPredictor, PreprocessedData, EvaluationBundle, TrainingSummary]:
     raw = fetch_stock_data(ticker_symbol, start, end)
     dataset = preprocess_data(raw, preprocess_cfg)
     ensure_enough_observations(dataset.features, model_cfg)
@@ -248,12 +276,19 @@ if fine_tune_clicked:
                         "preprocessed": combined,
                         "evaluation": evaluation,
                         "training_summary": summary,
-                        "training_window": (st.session_state["training_window"][0], fine_tune_end_date),
+                        "training_window": (
+                            st.session_state["training_window"][0],
+                            fine_tune_end_date,
+                        ),
                     }
                 )
                 history = st.session_state["run_history"]
                 history.append(
-                    {"type": "fine-tune", "summary": summary, "window": (fine_tune_start, fine_tune_end_date)}
+                    {
+                        "type": "fine-tune",
+                        "summary": summary,
+                        "window": (fine_tune_start, fine_tune_end_date),
+                    }
                 )
                 st.sidebar.success("Fine-tuning complete.")
             except Exception as exc:  # noqa: BLE001
@@ -263,7 +298,10 @@ if fine_tune_clicked:
 
 # Main layout -----------------------------------------------------------------------
 if st.session_state["model"] is None:
-    st.info("Train the model using the controls on the left to unlock evaluation and predictions.")
+    st.info(
+        "Train the model using the controls on the left to unlock evaluation and predictions.",
+        icon="👈",
+    )
 else:
     summary = st.session_state["training_summary"]
     dataset = st.session_state["preprocessed"]
@@ -320,7 +358,9 @@ else:
                 "probabilities": proba,
                 "message": message,
             }
-            logger.info("Generated prediction state=%s probability=%.2f", predicted_state, proba.max())
+            logger.info(
+                "Generated prediction state=%s probability=%.2f", predicted_state, proba.max()
+            )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Prediction failed: %s", exc)
             st.error(f"Prediction failed: {exc}")
