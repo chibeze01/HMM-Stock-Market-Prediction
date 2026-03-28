@@ -67,8 +67,7 @@ def describe_state(summary: pd.DataFrame, state_id: int) -> str:
     volatility = summary.loc[state_id, "volatility"]
     direction = "bullish" if mean_return > 0 else "bearish"
     return (
-        f"State {state_id}: {direction} "
-        f"(avg return {mean_return:.2%}, volatility {volatility:.2%})"
+        f"State {state_id}: {direction} (avg return {mean_return:.2%}, volatility {volatility:.2%})"
     )
 
 
@@ -248,12 +247,19 @@ if fine_tune_clicked:
                         "preprocessed": combined,
                         "evaluation": evaluation,
                         "training_summary": summary,
-                        "training_window": (st.session_state["training_window"][0], fine_tune_end_date),
+                        "training_window": (
+                            st.session_state["training_window"][0],
+                            fine_tune_end_date,
+                        ),
                     }
                 )
                 history = st.session_state["run_history"]
                 history.append(
-                    {"type": "fine-tune", "summary": summary, "window": (fine_tune_start, fine_tune_end_date)}
+                    {
+                        "type": "fine-tune",
+                        "summary": summary,
+                        "window": (fine_tune_start, fine_tune_end_date),
+                    }
                 )
                 st.sidebar.success("Fine-tuning complete.")
             except Exception as exc:  # noqa: BLE001
@@ -320,7 +326,9 @@ else:
                 "probabilities": proba,
                 "message": message,
             }
-            logger.info("Generated prediction state=%s probability=%.2f", predicted_state, proba.max())
+            logger.info(
+                "Generated prediction state=%s probability=%.2f", predicted_state, proba.max()
+            )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Prediction failed: %s", exc)
             st.error(f"Prediction failed: {exc}")

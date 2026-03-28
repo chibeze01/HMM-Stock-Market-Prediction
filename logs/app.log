@@ -219,3 +219,31 @@ TypeError: arg must be a list, tuple, 1-d array, or Series
 2025-11-09 23:13:06,188 | INFO | __main__ | Generated prediction state=2 probability=0.98
 2025-11-09 23:13:09,971 | INFO | __main__ | Generated prediction state=2 probability=0.98
 2025-11-09 23:13:12,543 | INFO | __main__ | Generated prediction state=2 probability=0.98
+2026-03-28 11:38:56,395 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-28 11:38:56,397 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,402 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-28 11:38:56,407 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-28 11:38:56,408 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,412 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-28 11:38:56,418 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-28 11:38:56,419 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,422 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-28 11:38:56,431 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-28 11:38:56,432 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,436 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-28 11:38:56,447 | INFO | model.evaluation | Evaluation completed: regimes=2 accuracy_points=75 loglike_points=75
+2026-03-28 11:38:56,447 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-28 11:38:56,449 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,451 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-28 11:38:56,452 | INFO | HMMStockPredictor | Fine-tuning with 30 new samples retain_history=True
+2026-03-28 11:38:56,452 | INFO | HMMStockPredictor | Training HMM with 90 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-28 11:38:56,453 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,457 | INFO | HMMStockPredictor | Training finished. LogLik=-112.18 Samples=90
+2026-03-28 11:38:56,457 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-28 11:38:56,459 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,462 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-28 11:38:56,464 | INFO | HMMStockPredictor | Saved HMM model to /tmp/tmpjun7ul0j/model.pkl
+2026-03-28 11:38:56,465 | INFO | HMMStockPredictor | Loaded HMM model from /tmp/tmpjun7ul0j/model.pkl
+2026-03-28 11:38:56,465 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=7)
+2026-03-28 11:38:56,467 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-28 11:38:56,469 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60

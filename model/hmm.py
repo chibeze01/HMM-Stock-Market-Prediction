@@ -93,7 +93,9 @@ class HMMStockPredictor:
             data = np.vstack([self._X_history, X_new])
         else:
             data = X_new
-        self.logger.info("Fine-tuning with %s new samples retain_history=%s", X_new.shape[0], retain_history)
+        self.logger.info(
+            "Fine-tuning with %s new samples retain_history=%s", X_new.shape[0], retain_history
+        )
         return self.train(data)
 
     def predict_next_day_state(self, X: np.ndarray) -> int:
@@ -105,7 +107,9 @@ class HMMStockPredictor:
         last_hidden_state = hidden_states[-1]
         most_likely_next_state = np.argmax(self.model.transmat_[last_hidden_state])
         self.logger.debug(
-            "Predicted next state %s from last hidden state %s", most_likely_next_state, last_hidden_state
+            "Predicted next state %s from last hidden state %s",
+            most_likely_next_state,
+            last_hidden_state,
         )
         return int(most_likely_next_state)
 

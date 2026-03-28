@@ -90,7 +90,10 @@ def fetch_stock_data(
 
     if cache_file.exists() and not force_refresh:
         logger.info(
-            "Loading cached prices for %s (%s → %s)", normalized_ticker, start_ts.date(), end_ts.date()
+            "Loading cached prices for %s (%s → %s)",
+            normalized_ticker,
+            start_ts.date(),
+            end_ts.date(),
         )
         return pd.read_csv(cache_file, index_col=0, parse_dates=True)
 
@@ -137,18 +140,10 @@ def _compute_features(frame: pd.DataFrame, config: PreprocessingConfig) -> Seque
     if "returns" in config.features:
         feature_columns.append("Returns")
     if "volatility" in config.features:
-        frame["Volatility"] = (
-            frame["Returns"]
-            .rolling(window=config.volatility_window)
-            .std()
-        )
+        frame["Volatility"] = frame["Returns"].rolling(window=config.volatility_window).std()
         feature_columns.append("Volatility")
     if "momentum" in config.features:
-        frame["Momentum"] = (
-            frame["Returns"]
-            .rolling(window=config.momentum_window)
-            .mean()
-        )
+        frame["Momentum"] = frame["Returns"].rolling(window=config.momentum_window).mean()
         feature_columns.append("Momentum")
     logger.debug("Computed feature set %s", feature_columns)
     return feature_columns
@@ -199,5 +194,7 @@ def merge_preprocessed(*bundles: PreprocessedData) -> PreprocessedData:
     merged_frame = pd.concat(frames).sort_index().copy()
     merged_features = np.vstack(features)
     merged_states = np.vstack(states)
-    logger.info("Merged %s preprocessed batches. Total rows=%s", len(bundles), merged_frame.shape[0])
+    logger.info(
+        "Merged %s preprocessed batches. Total rows=%s", len(bundles), merged_frame.shape[0]
+    )
     return PreprocessedData(merged_frame, merged_features, merged_states)

@@ -26,7 +26,10 @@ class EvaluationTests(unittest.TestCase):
         np.random.seed(0)
         self.frame = _dummy_frame()
         features = np.column_stack(
-            (self.frame["Returns"].values.reshape(-1, 1), self.frame["Returns"].values.reshape(-1, 1))
+            (
+                self.frame["Returns"].values.reshape(-1, 1),
+                self.frame["Returns"].values.reshape(-1, 1),
+            )
         )
         self.model = HMMStockPredictor(HMMConfig(n_hidden_states=2, n_iter=50))
         self.model.train(features)
