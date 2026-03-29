@@ -46,7 +46,7 @@ def _infer_direction_map(frame: pd.DataFrame, hidden_states: np.ndarray) -> Dict
         .groupby("HiddenState")["Returns"]
         .mean()
     )
-    return grouped.apply(lambda v: 1 if v >= 0 else -1).to_dict()
+    return dict(zip(grouped.index, np.where(grouped >= 0, 1, -1)))
 
 
 def rolling_directional_accuracy(
