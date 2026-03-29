@@ -1,5 +1,4 @@
 import math
-from typing import Tuple
 
 import numpy as np
 
@@ -83,9 +82,7 @@ class GaussianHMM:
                 if mask.any():
                     means[idx] = X[mask].mean(axis=0)
         labels = self._assign_clusters(X, means)
-        covars = np.stack(
-            [self._cluster_cov(X[labels == idx]) for idx in range(self.n_components)]
-        )
+        covars = np.stack([self._cluster_cov(X[labels == idx]) for idx in range(self.n_components)])
 
         self.means_ = means
         self.covars_ = covars
@@ -113,9 +110,7 @@ class GaussianHMM:
         for idx in range(self.n_components):
             cov = self.covars_[idx]
             mean = self.means_[idx]
-            log_probs[:, idx] = np.array(
-                [_gaussian_log_prob(sample, mean, cov) for sample in X]
-            )
+            log_probs[:, idx] = np.array([_gaussian_log_prob(sample, mean, cov) for sample in X])
         return log_probs
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
@@ -129,7 +124,7 @@ class GaussianHMM:
         per_sample = np.logaddexp.reduce(log_probs, axis=1)
         return float(per_sample.sum())
 
-    def score_samples(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def score_samples(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         log_prob_matrix = self._compute_log_likelihood(X)
         posteriors = self.predict_proba(X)
         total_log_prob = float(np.logaddexp.reduce(log_prob_matrix, axis=1).sum())
