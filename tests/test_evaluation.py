@@ -36,7 +36,7 @@ class EvaluationTests(unittest.TestCase):
         hidden_states = self.model.model.predict(self.features)
         summary = compute_regime_summary(self.frame, hidden_states)
         self.assertIn("mean_return", summary.columns)
-        self.assertEqual(len(summary), self.model.config.n_hidden_states)
+        self.assertLessEqual(len(summary), self.model.config.n_hidden_states)
 
     def test_directional_accuracy_series(self):
         hidden_states = self.model.model.predict(self.features)

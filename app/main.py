@@ -139,7 +139,7 @@ random_state = st.sidebar.number_input("Random Seed", value=42)
 st.sidebar.divider()
 reset_clicked = st.sidebar.button("Reset Session", use_container_width=True, on_click=reset_app)
 
-train_clicked = st.sidebar.button("Train / Re-train Model", use_container_width=True)
+train_clicked = st.sidebar.button("Train / Re-train Model", use_container_width=True, type="primary")
 
 st.sidebar.header("Fine-Tune")
 fine_tune_end_date = st.sidebar.date_input("Extend data up to", dt.date.today())
@@ -310,7 +310,7 @@ else:
             st.line_chart(evaluation.rolling_log_likelihood)
 
     st.subheader("Prediction")
-    if st.button("Predict Next Regime"):
+    if st.button("Predict Next Regime", type="primary"):
         try:
             predicted_state = st.session_state["model"].predict_next_day_state(dataset.features)
             proba = st.session_state["model"].regime_probabilities(dataset.features)[-1]
