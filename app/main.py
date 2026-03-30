@@ -151,7 +151,12 @@ train_clicked = st.sidebar.button(
 
 st.sidebar.header("Fine-Tune")
 fine_tune_end_date = st.sidebar.date_input("Extend data up to", dt.date.today())
-fine_tune_clicked = st.sidebar.button("Fine-Tune with Recent Data", use_container_width=True)
+fine_tune_clicked = st.sidebar.button(
+    "Fine-Tune with Recent Data",
+    use_container_width=True,
+    disabled=st.session_state["model"] is None,
+    help="Train a model first to enable fine-tuning.",
+)
 
 
 def train_pipeline(
@@ -325,7 +330,7 @@ else:
             st.line_chart(evaluation.rolling_log_likelihood)
 
     st.subheader("Prediction")
-    if st.button("Predict Next Regime"):
+    if st.button("Predict Next Regime", type="primary"):
         try:
             predicted_state = st.session_state["model"].predict_next_day_state(dataset.features)
             proba = st.session_state["model"].regime_probabilities(dataset.features)[-1]
