@@ -219,3 +219,87 @@ TypeError: arg must be a list, tuple, 1-d array, or Series
 2025-11-09 23:13:06,188 | INFO | __main__ | Generated prediction state=2 probability=0.98
 2025-11-09 23:13:09,971 | INFO | __main__ | Generated prediction state=2 probability=0.98
 2025-11-09 23:13:12,543 | INFO | __main__ | Generated prediction state=2 probability=0.98
+2026-03-31 11:10:30,705 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:10:30,707 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,711 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:10:30,718 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:10:30,719 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,723 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:10:30,731 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:10:30,732 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,736 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:10:30,748 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:10:30,749 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,754 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:10:30,767 | INFO | model.evaluation | Evaluation completed: regimes=2 accuracy_points=75 loglike_points=75
+2026-03-31 11:10:30,767 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:10:30,769 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,772 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-31 11:10:30,772 | INFO | HMMStockPredictor | Fine-tuning with 30 new samples retain_history=True
+2026-03-31 11:10:30,772 | INFO | HMMStockPredictor | Training HMM with 90 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:10:30,774 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,778 | INFO | HMMStockPredictor | Training finished. LogLik=-112.18 Samples=90
+2026-03-31 11:10:30,779 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:10:30,780 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,783 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-31 11:10:30,785 | INFO | HMMStockPredictor | Saved HMM model to /tmp/tmpisjlp5hj/model.pkl
+2026-03-31 11:10:30,785 | INFO | HMMStockPredictor | Loaded HMM model from /tmp/tmpisjlp5hj/model.pkl
+2026-03-31 11:10:30,786 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=7)
+2026-03-31 11:10:30,787 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:10:30,791 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-31 11:11:38,505 | INFO | model.utils | Loading cached prices for GOOGL (2020-01-01 → 2023-12-31)
+2026-03-31 11:11:38,521 | WARNING | model.utils | Dropped 2 rows with non-numeric Close values.
+2026-03-31 11:11:38,536 | INFO | HMMStockPredictor | Training HMM with 1001 samples and config=HMMConfig(n_hidden_states=4, n_iter=500, covariance_type='diag', random_state=42)
+2026-03-31 11:11:38,564 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 4 states
+2026-03-31 11:11:38,681 | INFO | HMMStockPredictor | Training finished. LogLik=6889.01 Samples=1001
+2026-03-31 11:11:38,818 | INFO | model.evaluation | Evaluation completed: regimes=4 accuracy_points=982 loglike_points=982
+2026-03-31 11:11:38,820 | INFO | __main__ | Training succeeded for GOOGL (2020-01-01 → 2023-12-31) states=4 features=('returns', 'volatility')
+2026-03-31 11:12:04,617 | INFO | model.utils | Loading cached prices for GOOGL (2020-01-01 → 2023-12-31)
+2026-03-31 11:12:04,630 | WARNING | model.utils | Dropped 2 rows with non-numeric Close values.
+2026-03-31 11:12:04,639 | INFO | HMMStockPredictor | Training HMM with 1001 samples and config=HMMConfig(n_hidden_states=4, n_iter=500, covariance_type='diag', random_state=42)
+2026-03-31 11:12:04,667 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 4 states
+2026-03-31 11:12:04,772 | INFO | HMMStockPredictor | Training finished. LogLik=6889.01 Samples=1001
+2026-03-31 11:12:04,898 | INFO | model.evaluation | Evaluation completed: regimes=4 accuracy_points=982 loglike_points=982
+2026-03-31 11:12:04,899 | INFO | __main__ | Training succeeded for GOOGL (2020-01-01 → 2023-12-31) states=4 features=('returns', 'volatility')
+2026-03-31 11:12:44,884 | INFO | model.utils | Loading cached prices for GOOGL (2020-01-01 → 2023-12-31)
+2026-03-31 11:12:44,896 | WARNING | model.utils | Dropped 2 rows with non-numeric Close values.
+2026-03-31 11:12:44,904 | INFO | HMMStockPredictor | Training HMM with 1001 samples and config=HMMConfig(n_hidden_states=4, n_iter=500, covariance_type='diag', random_state=42)
+2026-03-31 11:12:44,929 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 4 states
+2026-03-31 11:12:45,037 | INFO | HMMStockPredictor | Training finished. LogLik=6889.01 Samples=1001
+2026-03-31 11:12:45,156 | INFO | model.evaluation | Evaluation completed: regimes=4 accuracy_points=982 loglike_points=982
+2026-03-31 11:12:45,157 | INFO | __main__ | Training succeeded for GOOGL (2020-01-01 → 2023-12-31) states=4 features=('returns', 'volatility')
+2026-03-31 11:15:41,187 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:15:41,189 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,194 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:15:41,201 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:15:41,203 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,207 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:15:41,214 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:15:41,216 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,220 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:15:41,231 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:15:41,232 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,236 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-03-31 11:15:41,250 | INFO | model.evaluation | Evaluation completed: regimes=2 accuracy_points=75 loglike_points=75
+2026-03-31 11:15:41,251 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:15:41,253 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,257 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-31 11:15:41,257 | INFO | HMMStockPredictor | Fine-tuning with 30 new samples retain_history=True
+2026-03-31 11:15:41,257 | INFO | HMMStockPredictor | Training HMM with 90 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:15:41,259 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,263 | INFO | HMMStockPredictor | Training finished. LogLik=-112.18 Samples=90
+2026-03-31 11:15:41,264 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-03-31 11:15:41,265 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,269 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-31 11:15:41,272 | INFO | HMMStockPredictor | Saved HMM model to /tmp/tmp6jbviwlk/model.pkl
+2026-03-31 11:15:41,272 | INFO | HMMStockPredictor | Loaded HMM model from /tmp/tmp6jbviwlk/model.pkl
+2026-03-31 11:15:41,273 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=7)
+2026-03-31 11:15:41,275 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-03-31 11:15:41,278 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-03-31 11:16:10,530 | INFO | model.utils | Loading cached prices for GOOGL (2020-01-01 → 2023-12-31)
+2026-03-31 11:16:10,556 | WARNING | model.utils | Dropped 2 rows with non-numeric Close values.
+2026-03-31 11:16:10,572 | INFO | HMMStockPredictor | Training HMM with 1001 samples and config=HMMConfig(n_hidden_states=4, n_iter=500, covariance_type='diag', random_state=42)
+2026-03-31 11:16:10,600 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 4 states
+2026-03-31 11:16:10,722 | INFO | HMMStockPredictor | Training finished. LogLik=6889.01 Samples=1001
+2026-03-31 11:16:10,847 | INFO | model.evaluation | Evaluation completed: regimes=4 accuracy_points=982 loglike_points=982
+2026-03-31 11:16:10,848 | INFO | __main__ | Training succeeded for GOOGL (2020-01-01 → 2023-12-31) states=4 features=('returns', 'volatility')
