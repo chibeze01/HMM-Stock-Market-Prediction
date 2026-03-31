@@ -1,0 +1,3 @@
+## 2024-03-31 - [Array Indexing Instead of Vectorize Dict Lookup]
+**Learning:** `np.vectorize(dict.get)` is slow because it iterates over array elements in Python space. For contiguous integer lookups, creating a mapping array and indexing it directly with the source array (e.g., `mapping[hidden_states]`) is much faster and more idiomatic in NumPy.
+**Action:** Replace `np.vectorize(dict.get)` with direct array indexing whenever mapping contiguous integer values like states to new values.
