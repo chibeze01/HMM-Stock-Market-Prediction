@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 LOG_DIR = Path(__file__).resolve().parents[1] / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -10,7 +9,7 @@ LOG_FILE = LOG_DIR / "app.log"
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
 
-def configure_logging(level: Optional[str] = None) -> logging.Logger:
+def configure_logging(level: str | None = None) -> logging.Logger:
     """
     Configure the root logger with console and file handlers.
     """

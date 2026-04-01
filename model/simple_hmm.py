@@ -1,5 +1,4 @@
 import math
-from typing import Tuple
 
 import numpy as np
 
@@ -57,7 +56,7 @@ class GaussianHMM:
 
     def _estimate_transitions(self, labels: np.ndarray) -> np.ndarray:
         trans = np.ones((self.n_components, self.n_components))  # add-one smoothing
-        for prev, nxt in zip(labels[:-1], labels[1:]):
+        for prev, nxt in zip(labels[:-1], labels[1:], strict=False):
             trans[prev, nxt] += 1
         trans /= trans.sum(axis=1, keepdims=True)
         return trans
@@ -125,7 +124,7 @@ class GaussianHMM:
         per_sample = np.logaddexp.reduce(log_probs, axis=1)
         return float(per_sample.sum())
 
-    def score_samples(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def score_samples(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         log_prob_matrix = self._compute_log_likelihood(X)
         posteriors = self.predict_proba(X)
         total_log_prob = float(np.logaddexp.reduce(log_prob_matrix, axis=1).sum())

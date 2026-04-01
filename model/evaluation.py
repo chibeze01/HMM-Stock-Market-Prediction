@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -40,21 +39,20 @@ def compute_regime_summary(frame: pd.DataFrame, hidden_states: np.ndarray) -> pd
     return summary
 
 
-def _infer_direction_map(frame: pd.DataFrame, hidden_states: np.ndarray) -> Dict[int, int]:
+def _infer_direction_map(frame: pd.DataFrame, hidden_states: np.ndarray) -> dict[int, int]:
     grouped = (
         frame.assign(HiddenState=hidden_states.flatten()).groupby("HiddenState")["Returns"].mean()
     )
-    # ⚡ Bolt: Use vectorized np.where instead of .apply() with python lambda for 2x speedup
-    signs = np.where(grouped >= 0, 1, -1)
-    # ⚡ Bolt: dict(zip) avoids overhead of intermediate Series creation in .to_dict()
-    return dict(zip(grouped.index, signs))
+    # ⚡ Bolt: Vectorize pandas operation and use dict(zip()) to avoid intermediate Series creation
+    directions = np.where(grouped >= 0, 1, -1)
+    return dict(zip(grouped.index, directions, strict=False))
 
 
 def rolling_directional_accuracy(
     frame: pd.DataFrame,
     hidden_states: np.ndarray,
     window: int = 20,
-    direction_map: Optional[Dict[int, int]] = None,
+    direction_map: dict[int, int] | None = None,
 ) -> pd.Series:
     """
     Computes a rolling proportion of days where the inferred regime direction
@@ -67,19 +65,18 @@ def rolling_directional_accuracy(
 
     direction_map = direction_map or _infer_direction_map(frame, hidden_states)
 
-    # ⚡ Bolt: Replace 100x slower np.vectorize(dict.get) with fast array mapping.
-    # We find the max key to pre-allocate an array where indices are keys, mapping them to direction values.
+    # ⚡ Bolt: Replaced extremely slow `np.vectorize(dict.get)` with O(1) direct array indexing.
+    # This acts as a lookup table instead of executing Python function calls per-element.
     flat_states = hidden_states.flatten()
     max_state = max(direction_map.keys()) if direction_map else 0
-    # Add a fallback for unmapped states (though normally hidden_states are just 0 to n-1)
-    mapping_array = np.zeros(max_state + 1, dtype=int)
+    lookup_array = np.zeros(max_state + 1, dtype=int)
     for state, direction in direction_map.items():
-        mapping_array[state] = direction
+        lookup_array[state] = direction
+    predicted_direction = lookup_array[flat_states]
 
-    predicted_direction = mapping_array[flat_states]
-
-    realized_direction = np.sign(frame["Returns"])
-    accuracy = (predicted_direction == np.sign(realized_direction)).astype(int)
+    # ⚡ Bolt: Vectorize sign calculation to operate directly on the NumPy array instead of Series
+    realized_direction = np.sign(frame["Returns"].to_numpy())
+    accuracy = (predicted_direction == realized_direction).astype(int)
     result = pd.Series(accuracy, index=frame.index).rolling(window=window).mean().dropna()
     logger.debug("Calculated rolling accuracy window=%s points=%s", window, result.shape[0])
     return result

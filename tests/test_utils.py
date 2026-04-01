@@ -3,8 +3,8 @@ import unittest
 import pandas as pd
 
 from model.utils import (
-    PreprocessingConfig,
     PreprocessedData,
+    PreprocessingConfig,
     fetch_stock_data,
     preprocess_data,
 )

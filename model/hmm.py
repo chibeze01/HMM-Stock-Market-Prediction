@@ -2,7 +2,6 @@ import datetime as dt
 import pickle
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional, Union
 
 import numpy as np
 
@@ -19,7 +18,7 @@ class HMMConfig:
     n_hidden_states: int = 4
     n_iter: int = 500
     covariance_type: str = "diag"
-    random_state: Optional[int] = 42
+    random_state: int | None = 42
 
     def __post_init__(self):
         if self.n_hidden_states < 2:
@@ -42,14 +41,14 @@ class HMMStockPredictor:
     A class for a Hidden Markov Model (HMM) based stock market predictor.
     """
 
-    def __init__(self, config: Optional[HMMConfig] = None):
+    def __init__(self, config: HMMConfig | None = None):
         """
         Initializes the HMMStockPredictor.
         """
         self.config = config or HMMConfig()
         self.model = self._build_model()
-        self.training_history: List[TrainingSummary] = []
-        self._X_history: Optional[np.ndarray] = None
+        self.training_history: list[TrainingSummary] = []
+        self._X_history: np.ndarray | None = None
         self.logger = get_logger(self.__class__.__name__)
 
     def _build_model(self) -> GaussianHMM:
@@ -122,7 +121,7 @@ class HMMStockPredictor:
         self.logger.debug("Computed regime probabilities for %s samples", len(probabilities))
         return probabilities
 
-    def save(self, path: Union[Path, str]) -> Path:
+    def save(self, path: Path | str) -> Path:
         """
         Persists the trained model and metadata to disk.
         """

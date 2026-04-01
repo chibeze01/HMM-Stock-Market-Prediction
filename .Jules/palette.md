@@ -1,0 +1,3 @@
+## 2024-05-24 - Proactive Validation in Streamlit Buttons
+**Learning:** Instead of allowing a user to click a button and showing an error message (like trying to fine-tune a model when no model exists), Streamlit's `st.button` supports a `disabled` parameter. Coupling this with a dynamic `help` string provides a much better UX by proactively preventing invalid actions and explaining why the action is unavailable.
+**Action:** Always prefer disabling buttons with explanatory tooltips over rendering error states after a user clicks an invalid action in Streamlit applications.
