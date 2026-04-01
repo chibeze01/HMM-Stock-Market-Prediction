@@ -63,14 +63,15 @@ def rolling_directional_accuracy(
 
     direction_map = direction_map or _infer_direction_map(frame, hidden_states)
 
-    # ⚡ Bolt: Replace np.vectorize(dict.get) with faster array indexing
-    # Create mapping array where the index is the hidden state (keys)
-    max_state = max(direction_map.keys())
-    mapping = np.zeros(max_state + 1, dtype=int)
-    for state, direction in direction_map.items():
-        mapping[state] = direction
+    # ⚡ Bolt: Replace np.vectorize with direct array indexing for contiguous integer lookup.
+    # np.vectorize iterates in Python space which is an anti-pattern. Array indexing
+    # maps integer state values natively in C, offering significant performance gains.
+    max_state = max(direction_map.keys()) if direction_map else 0
+    if hidden_states.size > 0:
+        max_state = max(max_state, int(np.max(hidden_states)))
+    mapping_arr = np.array([direction_map.get(i, 0) for i in range(max_state + 1)])
+    predicted_direction = mapping_arr[hidden_states.flatten()]
 
-    predicted_direction = mapping[hidden_states.flatten()]
     realized_direction = np.sign(frame["Returns"])
     accuracy = (predicted_direction == np.sign(realized_direction)).astype(int)
     result = pd.Series(accuracy, index=frame.index).rolling(window=window).mean().dropna()
