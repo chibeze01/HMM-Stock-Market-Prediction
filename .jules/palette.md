@@ -1,3 +1,6 @@
+## 2026-03-29 - Enhance Visual Hierarchy in Streamlit Sidebars
+**Learning:** In form-heavy Streamlit apps, it's critical to use `type="primary"` on the main call-to-action buttons (like "Train Model" or "Submit") to visually distinguish them from secondary actions like "Reset" or input elements. This explicitly anchors the main interactive element for users and improves cognitive flow.
+**Action:** Always explicitly set `type="primary"` for the primary submission or progression action in any multi-input form or sidebar.
 ## 2026-03-28 - Highlight primary path for Train/Re-Train button
 **Learning:** Adding the Streamlit parameter `type="primary"` to the "Train / Re-train Model" button significantly draws user attention to the main required action, whereas default button styles blend into the configuration sidebar and can cause hesitation on what to do next.
 **Action:** Use `type="primary"` to explicitly anchor the main interactive element on any form or sidebar that initiates the core compute path.
