@@ -1,3 +1,9 @@
+2026-04-01 10:49:35,420 | INFO | model.utils | Loading cached prices for GOOGL (2020-01-01 → 2023-12-31)
+2026-04-01 10:49:35,436 | WARNING | model.utils | Dropped 2 rows with non-numeric Close values.
+2026-04-01 10:49:35,445 | INFO | HMMStockPredictor | Training HMM with 1001 samples and config=HMMConfig(n_hidden_states=4, n_iter=500, covariance_type='diag', random_state=42)
+2026-04-01 10:49:35,824 | INFO | HMMStockPredictor | Training finished. LogLik=6140.73 Samples=1001
+2026-04-01 10:49:35,836 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=982 loglike_points=982
+2026-04-01 10:49:35,837 | INFO | __main__ | Training succeeded for GOOGL (2020-01-01 → 2023-12-31) states=4 features=('returns', 'volatility')
 2025-11-09 22:57:07,462 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
 2025-11-09 22:57:07,466 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
 2025-11-09 22:57:07,473 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
