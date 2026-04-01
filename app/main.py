@@ -145,17 +145,25 @@ random_state = st.sidebar.number_input("Random Seed", value=42)
 st.sidebar.divider()
 reset_clicked = st.sidebar.button("Reset Session", use_container_width=True, on_click=reset_app)
 
+train_can_click = len(selected_features) > 0
 train_clicked = st.sidebar.button(
-    "Train / Re-train Model", use_container_width=True, type="primary"
+    "Train / Re-train Model",
+    use_container_width=True,
+    type="primary",
+    disabled=not train_can_click,
+    help="Select at least one feature to train the model." if not train_can_click else None,
 )
 
 st.sidebar.header("Fine-Tune")
 fine_tune_end_date = st.sidebar.date_input("Extend data up to", dt.date.today())
+can_fine_tune = (
+    st.session_state["model"] is not None and st.session_state["preprocessed"] is not None
+)
 fine_tune_clicked = st.sidebar.button(
     "Fine-Tune with Recent Data",
     use_container_width=True,
-    disabled=st.session_state["model"] is None,
-    help="Train a model first before fine-tuning." if st.session_state["model"] is None else None,
+    disabled=not can_fine_tune,
+    help="Train a model first before fine-tuning." if not can_fine_tune else None,
 )
 
 if st.session_state.get("success_message"):
@@ -179,37 +187,84 @@ def train_pipeline(
 
 
 if train_clicked:
-    if not selected_features:
-        st.sidebar.error("Select at least one feature before training.")
+    try:
+        preprocess_cfg = PreprocessingConfig(
+            features=selected_features,
+            volatility_window=vol_window,
+            momentum_window=mom_window,
+        )
+        model_cfg = HMMConfig(
+            n_hidden_states=hidden_states,
+            covariance_type=covariance_type,
+            n_iter=n_iter,
+            random_state=int(random_state),
+        )
+        with st.spinner("Training model..."):
+            model, dataset, evaluation, summary = train_pipeline(
+                ticker, start_date, end_date, preprocess_cfg, model_cfg
+            )
+        logger.info(
+            "Training succeeded for %s (%s → %s) states=%s features=%s",
+            ticker,
+            start_date,
+            end_date,
+            hidden_states,
+            selected_features,
+        )
+        st.session_state.update(
+            {
+                "model": model,
+                "preprocessed": dataset,
+                "evaluation": evaluation,
+                "training_summary": summary,
+                "training_window": (start_date, end_date),
+                "preprocess_config": preprocess_cfg,
+                "model_config": model_cfg,
+                "ticker": ticker,
+                "run_history": [
+                    {
+                        "type": "train",
+                        "summary": summary,
+                        "window": (start_date, end_date),
+                    }
+                ],
+                "last_prediction": None,
+            }
+        )
+        st.sidebar.success("Model trained successfully.")
+        st.rerun()
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Training failed: %s", exc)
+        st.sidebar.error(f"Training failed: {exc}")
+
+
+if fine_tune_clicked:
+    current_end = st.session_state["training_window"][1]
+    fine_tune_start = current_end + dt.timedelta(days=1)
+    if fine_tune_end_date <= fine_tune_start:
+        st.sidebar.warning("Choose an end date after the latest trained date.")
     else:
         try:
-            preprocess_cfg = PreprocessingConfig(
-                features=selected_features,
-                volatility_window=vol_window,
-                momentum_window=mom_window,
-            )
-            model_cfg = HMMConfig(
-                n_hidden_states=hidden_states,
-                covariance_type=covariance_type,
-                n_iter=n_iter,
-                random_state=int(random_state),
-            )
-            with st.spinner("Training model..."):
-                model, dataset, evaluation, summary = train_pipeline(
-                    ticker, start_date, end_date, preprocess_cfg, model_cfg
+            preprocess_cfg = st.session_state["preprocess_config"]
+            with st.spinner("Fine-tuning with latest data..."):
+                new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
+                new_dataset = preprocess_data(new_raw, preprocess_cfg)
+                if new_dataset.features.size == 0:
+                    raise ValueError("No usable new data was returned for this window.")
+                combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
+                summary = st.session_state["model"].fine_tune(combined.features)
+                evaluation = run_evaluation(
+                    st.session_state["model"], combined.frame, combined.features
                 )
             logger.info(
-                "Training succeeded for %s (%s → %s) states=%s features=%s",
+                "Fine-tuned model for %s adding window %s → %s",
                 ticker,
-                start_date,
-                end_date,
-                hidden_states,
-                selected_features,
+                fine_tune_start,
+                fine_tune_end_date,
             )
             st.session_state.update(
                 {
-                    "model": model,
-                    "preprocessed": dataset,
+                    "preprocessed": combined,
                     "evaluation": evaluation,
                     "training_summary": summary,
                     "training_window": (start_date, end_date),
