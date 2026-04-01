@@ -119,6 +119,10 @@ selected_feature_labels = st.sidebar.multiselect(
     "Features for Observations",
     options=list(feature_labels.keys()),
     default=["Daily Returns", "Rolling Volatility"],
+    help=(
+        "Select the data inputs (features) that the Hidden Markov Model "
+        "will use to learn market regimes."
+    ),
 )
 selected_features = tuple(feature_labels[label] for label in selected_feature_labels)
 
@@ -132,8 +136,8 @@ hidden_states = st.sidebar.slider(
     max_value=8,
     value=4,
     help=(
-        "Choose how many latent regimes the HMM should learn "
-        "(higher values capture more nuanced behaviors but need more data)."
+        "Choose how many latent regimes the HMM should learn (higher values "
+        "capture more nuanced behaviors but need more data)."
     ),
 )
 covariance_type = st.sidebar.selectbox(
@@ -151,7 +155,7 @@ train_clicked = st.sidebar.button(
     use_container_width=True,
     type="primary",
     disabled=not train_can_click,
-    help="Select at least one feature to train the model." if not train_can_click else None,
+    help="Select at least one feature to train the model." if not train_can_click else "Train the model with the selected configuration.",
 )
 
 st.sidebar.header("Fine-Tune")
@@ -163,7 +167,7 @@ fine_tune_clicked = st.sidebar.button(
     "Fine-Tune with Recent Data",
     use_container_width=True,
     disabled=not can_fine_tune,
-    help="Train a model first before fine-tuning." if not can_fine_tune else None,
+    help="Train a model first before fine-tuning." if not can_fine_tune else "Train the model with the selected configuration.",
 )
 
 if st.session_state.get("success_message"):
@@ -370,7 +374,10 @@ if fine_tune_clicked:
 
 # Main layout -----------------------------------------------------------------------
 if st.session_state["model"] is None:
-    st.info("Train the model using the controls on the left to unlock evaluation and predictions.")
+    st.info(
+        "Train the model using the controls on the left to unlock evaluation and predictions.",
+        icon="👈",
+    )
 else:
     summary = st.session_state["training_summary"]
     dataset = st.session_state["preprocessed"]
