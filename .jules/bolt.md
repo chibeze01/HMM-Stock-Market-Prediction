@@ -1,3 +1,6 @@
+## 2026-03-29 - NumPy np.vectorize with dict lookups is an anti-pattern
+**Learning:** Using `np.vectorize(dict.get)` to map values in a NumPy array executes a Python function call for every single element, which acts as a massive performance bottleneck. It defeats the entire purpose of using NumPy.
+**Action:** When you need to map contiguous integer values (like state IDs) to other values, always use direct array indexing. Create a lookup array where the index corresponds to the key and the value is the mapped value, and use `lookup_array[input_array]` to perform the mapping in O(1) vectorized C code.
 ## 2024-03-31 - [Array Indexing Instead of Vectorize Dict Lookup]
 **Learning:** `np.vectorize(dict.get)` is slow because it iterates over array elements in Python space. For contiguous integer lookups, creating a mapping array and indexing it directly with the source array (e.g., `mapping[hidden_states]`) is much faster and more idiomatic in NumPy.
 **Action:** Replace `np.vectorize(dict.get)` with direct array indexing whenever mapping contiguous integer values like states to new values.

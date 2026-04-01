@@ -294,17 +294,47 @@ if fine_tune_clicked:
     if fine_tune_end_date <= fine_tune_start:
         st.sidebar.warning("Choose an end date after the latest trained date.")
     else:
-        try:
-            preprocess_cfg = st.session_state["preprocess_config"]
-            with st.spinner("Fine-tuning with latest data..."):
-                new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
-                new_dataset = preprocess_data(new_raw, preprocess_cfg)
-                if new_dataset.features.size == 0:
-                    raise ValueError("No usable new data was returned for this window.")
-                combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
-                summary = st.session_state["model"].fine_tune(combined.features)
-                evaluation = run_evaluation(
-                    st.session_state["model"], combined.frame, combined.features
+        current_end = st.session_state["training_window"][1]
+        fine_tune_start = current_end + dt.timedelta(days=1)
+        if fine_tune_end_date <= fine_tune_start:
+            st.sidebar.warning("Choose an end date after the latest trained date.")
+        else:
+            try:
+                preprocess_cfg = st.session_state["preprocess_config"]
+                with st.spinner("Fine-tuning with latest data..."):
+                    new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
+                    new_dataset = preprocess_data(new_raw, preprocess_cfg)
+                    if new_dataset.features.size == 0:
+                        raise ValueError("No usable new data was returned for this window.")
+                    combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
+                    summary = st.session_state["model"].fine_tune(combined.features)
+                    evaluation = run_evaluation(
+                        st.session_state["model"], combined.frame, combined.features
+                    )
+                logger.info(
+                    "Fine-tuned model for %s adding window %s → %s",
+                    ticker,
+                    fine_tune_start,
+                    fine_tune_end_date,
+                )
+                st.session_state.update(
+                    {
+                        "preprocessed": combined,
+                        "evaluation": evaluation,
+                        "training_summary": summary,
+                        "training_window": (
+                            st.session_state["training_window"][0],
+                            fine_tune_end_date,
+                        ),
+                    }
+                )
+                history = st.session_state["run_history"]
+                history.append(
+                    {
+                        "type": "fine-tune",
+                        "summary": summary,
+                        "window": (fine_tune_start, fine_tune_end_date),
+                    }
                 )
             logger.info(
                 "Fine-tuned model for %s adding window %s → %s",
