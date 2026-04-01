@@ -3,8 +3,8 @@ import unittest
 import pandas as pd
 
 from model.utils import (
-    PreprocessingConfig,
     PreprocessedData,
+    PreprocessingConfig,
     fetch_stock_data,
     preprocess_data,
 )
@@ -39,9 +39,7 @@ class UtilsTestCase(unittest.TestCase):
 
         self.assertEqual(result.features.shape[1], 1)
         self.assertIn("Momentum", result.frame.columns)
-        self.assertTrue(
-            set(result.frame["State"].unique()).issubset({0, 1, 2, 3})
-        )
+        self.assertTrue(set(result.frame["State"].unique()).issubset({0, 1, 2, 3}))
 
 
 if __name__ == "__main__":

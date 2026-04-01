@@ -1,7 +1,7 @@
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -21,21 +21,21 @@ class PreprocessingConfig:
     Configuration for making features and state buckets.
     """
 
-    return_bins: Tuple[float, ...] = (
+    return_bins: tuple[float, ...] = (
         -np.inf,
         -0.01,
         0,
         0.01,
         np.inf,
     )
-    features: Tuple[str, ...] = ("returns", "volatility")
+    features: tuple[str, ...] = ("returns", "volatility")
     volatility_window: int = 5
     momentum_window: int = 3
 
     def __post_init__(self):
         if not self.features:
             raise ValueError("At least one feature must be specified.")
-        if any(a >= b for a, b in zip(self.return_bins, self.return_bins[1:])):
+        if any(a >= b for a, b in zip(self.return_bins, self.return_bins[1:], strict=False)):
             raise ValueError("return_bins must be strictly increasing.")
         unknown = set(self.features) - ALLOWED_FEATURES
         if unknown:
@@ -53,7 +53,7 @@ class PreprocessedData:
     states: np.ndarray
 
 
-def _validate_dates(start_date, end_date) -> Tuple[pd.Timestamp, pd.Timestamp]:
+def _validate_dates(start_date, end_date) -> tuple[pd.Timestamp, pd.Timestamp]:
     start_ts = pd.Timestamp(start_date).normalize()
     end_ts = pd.Timestamp(end_date).normalize()
     if start_ts >= end_ts:
@@ -90,7 +90,10 @@ def fetch_stock_data(
 
     if cache_file.exists() and not force_refresh:
         logger.info(
-            "Loading cached prices for %s (%s → %s)", normalized_ticker, start_ts.date(), end_ts.date()
+            "Loading cached prices for %s (%s → %s)",
+            normalized_ticker,
+            start_ts.date(),
+            end_ts.date(),
         )
         return pd.read_csv(cache_file, index_col=0, parse_dates=True)
 
@@ -108,7 +111,7 @@ def fetch_stock_data(
         end_ts.date(),
         force_refresh,
     )
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
             data = yf.download(normalized_ticker, start=start_ts, end=end_ts)
@@ -137,25 +140,17 @@ def _compute_features(frame: pd.DataFrame, config: PreprocessingConfig) -> Seque
     if "returns" in config.features:
         feature_columns.append("Returns")
     if "volatility" in config.features:
-        frame["Volatility"] = (
-            frame["Returns"]
-            .rolling(window=config.volatility_window)
-            .std()
-        )
+        frame["Volatility"] = frame["Returns"].rolling(window=config.volatility_window).std()
         feature_columns.append("Volatility")
     if "momentum" in config.features:
-        frame["Momentum"] = (
-            frame["Returns"]
-            .rolling(window=config.momentum_window)
-            .mean()
-        )
+        frame["Momentum"] = frame["Returns"].rolling(window=config.momentum_window).mean()
         feature_columns.append("Momentum")
     logger.debug("Computed feature set %s", feature_columns)
     return feature_columns
 
 
 def preprocess_data(
-    data: pd.DataFrame, config: Optional[PreprocessingConfig] = None
+    data: pd.DataFrame, config: PreprocessingConfig | None = None
 ) -> PreprocessedData:
     """
     Preprocesses the stock data for the HMM model.
@@ -199,5 +194,7 @@ def merge_preprocessed(*bundles: PreprocessedData) -> PreprocessedData:
     merged_frame = pd.concat(frames).sort_index().copy()
     merged_features = np.vstack(features)
     merged_states = np.vstack(states)
-    logger.info("Merged %s preprocessed batches. Total rows=%s", len(bundles), merged_frame.shape[0])
+    logger.info(
+        "Merged %s preprocessed batches. Total rows=%s", len(bundles), merged_frame.shape[0]
+    )
     return PreprocessedData(merged_frame, merged_features, merged_states)

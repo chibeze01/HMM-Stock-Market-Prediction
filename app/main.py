@@ -67,8 +67,7 @@ def describe_state(summary: pd.DataFrame, state_id: int) -> str:
     volatility = summary.loc[state_id, "volatility"]
     direction = "bullish" if mean_return > 0 else "bearish"
     return (
-        f"State {state_id}: {direction} "
-        f"(avg return {mean_return:.2%}, volatility {volatility:.2%})"
+        f"State {state_id}: {direction} (avg return {mean_return:.2%}, volatility {volatility:.2%})"
     )
 
 
