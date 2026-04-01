@@ -1,0 +1,3 @@
+## 2024-04-01 - [Avoid np.vectorize with dict.get for contiguous integer mapping]
+**Learning:** `np.vectorize` is essentially a Python-level `for` loop, meaning it iterates over items in Python space instead of compiling down to fast, vectorized C operations. When mapping contiguous integers (like Hidden States in an HMM) to values via a dictionary, doing `np.vectorize(dict.get)(array)` acts as a significant performance anti-pattern.
+**Action:** Replace `np.vectorize(dict.get)` with direct array indexing. By initializing a mapping array where the array indices match the dictionary keys (e.g., `mapping_array = np.array([dict.get(i, 0) for i in range(max_key + 1)])`), you can instantly map all integers in C using `mapping_array[integers_array]`.
