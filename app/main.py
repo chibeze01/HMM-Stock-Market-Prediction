@@ -48,6 +48,7 @@ def initialize_session_state() -> None:
         "last_prediction": None,
         "log_messages": [],
         "_streamlit_log_attached": False,
+        "success_message": None,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -165,6 +166,9 @@ fine_tune_clicked = st.sidebar.button(
     help="Train a model first before fine-tuning." if not can_fine_tune else None,
 )
 
+if st.session_state.get("success_message"):
+    st.sidebar.success(st.session_state["success_message"])
+    st.session_state["success_message"] = None
 
 def train_pipeline(
     ticker_symbol: str,
@@ -263,10 +267,61 @@ if fine_tune_clicked:
                     "preprocessed": combined,
                     "evaluation": evaluation,
                     "training_summary": summary,
+                    "training_window": (start_date, end_date),
+                    "preprocess_config": preprocess_cfg,
+                    "model_config": model_cfg,
+                    "ticker": ticker,
+                    "run_history": [
+                        {
+                            "type": "train",
+                            "summary": summary,
+                            "window": (start_date, end_date),
+                        }
+                    ],
+                    "last_prediction": None,
+                    "success_message": "Model trained successfully.",
+                }
+            )
+            st.rerun()
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Training failed: %s", exc)
+            st.sidebar.error(f"Training failed: {exc}")
+
+
+if fine_tune_clicked:
+    current_end = st.session_state["training_window"][1]
+    fine_tune_start = current_end + dt.timedelta(days=1)
+    if fine_tune_end_date <= fine_tune_start:
+        st.sidebar.warning("Choose an end date after the latest trained date.")
+    else:
+        try:
+            preprocess_cfg = st.session_state["preprocess_config"]
+            with st.spinner("Fine-tuning with latest data..."):
+                new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
+                new_dataset = preprocess_data(new_raw, preprocess_cfg)
+                if new_dataset.features.size == 0:
+                    raise ValueError("No usable new data was returned for this window.")
+                combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
+                summary = st.session_state["model"].fine_tune(combined.features)
+                evaluation = run_evaluation(
+                    st.session_state["model"], combined.frame, combined.features
+                )
+            logger.info(
+                "Fine-tuned model for %s adding window %s → %s",
+                ticker,
+                fine_tune_start,
+                fine_tune_end_date,
+            )
+            st.session_state.update(
+                {
+                    "preprocessed": combined,
+                    "evaluation": evaluation,
+                    "training_summary": summary,
                     "training_window": (
                         st.session_state["training_window"][0],
                         fine_tune_end_date,
                     ),
+                        "success_message": "Fine-tuning complete.",
                 }
             )
             history = st.session_state["run_history"]
@@ -277,7 +332,6 @@ if fine_tune_clicked:
                     "window": (fine_tune_start, fine_tune_end_date),
                 }
             )
-            st.sidebar.success("Fine-tuning complete.")
             st.rerun()
         except Exception as exc:  # noqa: BLE001
             logger.exception("Fine-tuning failed: %s", exc)
