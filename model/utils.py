@@ -35,7 +35,7 @@ class PreprocessingConfig:
     def __post_init__(self):
         if not self.features:
             raise ValueError("At least one feature must be specified.")
-        if any(a >= b for a, b in zip(self.return_bins, self.return_bins[1:])):
+        if any(a >= b for a, b in zip(self.return_bins, self.return_bins[1:], strict=False)):
             raise ValueError("return_bins must be strictly increasing.")
         unknown = set(self.features) - ALLOWED_FEATURES
         if unknown:
