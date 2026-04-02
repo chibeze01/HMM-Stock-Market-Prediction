@@ -14,12 +14,14 @@ def _stable_inverse(matrix: np.ndarray) -> np.ndarray:
         return np.linalg.pinv(matrix)
 
 
-def _gaussian_log_prob(x: np.ndarray, mean: np.ndarray, cov: np.ndarray) -> float:
+# ⚡ Bolt: Vectorized to compute over all samples (N) at once using einsum.
+# This prevents redundant covariance inversions and loop overhead per sample.
+def _gaussian_log_prob(X: np.ndarray, mean: np.ndarray, cov: np.ndarray) -> np.ndarray:
     dim = mean.shape[0]
-    diff = x - mean
+    diff = X - mean
     inv = _stable_inverse(cov)
     log_det = np.log(np.linalg.det(cov) + 1e-9)
-    quad = diff @ inv @ diff.T
+    quad = np.einsum("ni,ij,nj->n", diff, inv, diff)
     return -0.5 * (quad + log_det + dim * math.log(2 * math.pi))
 
 
@@ -110,7 +112,8 @@ class GaussianHMM:
         for idx in range(self.n_components):
             cov = self.covars_[idx]
             mean = self.means_[idx]
-            log_probs[:, idx] = np.array([_gaussian_log_prob(sample, mean, cov) for sample in X])
+            # ⚡ Bolt: Pass the whole array X at once
+            log_probs[:, idx] = _gaussian_log_prob(X, mean, cov)
         return log_probs
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
