@@ -10,6 +10,13 @@ import streamlit as st
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from model.backtesting import (
+    BacktestConfig,
+    BacktestEngine,
+    BacktestResult,
+    WalkForwardConfig,
+    walk_forward_backtest,
+)
 from model.evaluation import EvaluationBundle, run_evaluation
 from model.hmm import HMMConfig, HMMStockPredictor, TrainingSummary
 from model.logging_utils import LOG_FILE, configure_logging
@@ -49,6 +56,7 @@ def initialize_session_state() -> None:
         "log_messages": [],
         "_streamlit_log_attached": False,
         "success_message": None,
+        "backtest_result": None,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -271,91 +279,11 @@ if fine_tune_clicked:
                     "preprocessed": combined,
                     "evaluation": evaluation,
                     "training_summary": summary,
-                    "training_window": (start_date, end_date),
-                    "preprocess_config": preprocess_cfg,
-                    "model_config": model_cfg,
-                    "ticker": ticker,
-                    "run_history": [
-                        {
-                            "type": "train",
-                            "summary": summary,
-                            "window": (start_date, end_date),
-                        }
-                    ],
-                    "last_prediction": None,
-                    "success_message": "Model trained successfully.",
-                }
-            )
-            st.rerun()
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("Training failed: %s", exc)
-            st.sidebar.error(f"Training failed: {exc}")
-
-
-if fine_tune_clicked:
-    current_end = st.session_state["training_window"][1]
-    fine_tune_start = current_end + dt.timedelta(days=1)
-    if fine_tune_end_date <= fine_tune_start:
-        st.sidebar.warning("Choose an end date after the latest trained date.")
-    else:
-        current_end = st.session_state["training_window"][1]
-        fine_tune_start = current_end + dt.timedelta(days=1)
-        if fine_tune_end_date <= fine_tune_start:
-            st.sidebar.warning("Choose an end date after the latest trained date.")
-        else:
-            try:
-                preprocess_cfg = st.session_state["preprocess_config"]
-                with st.spinner("Fine-tuning with latest data..."):
-                    new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
-                    new_dataset = preprocess_data(new_raw, preprocess_cfg)
-                    if new_dataset.features.size == 0:
-                        raise ValueError("No usable new data was returned for this window.")
-                    combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
-                    summary = st.session_state["model"].fine_tune(combined.features)
-                    evaluation = run_evaluation(
-                        st.session_state["model"], combined.frame, combined.features
-                    )
-                logger.info(
-                    "Fine-tuned model for %s adding window %s → %s",
-                    ticker,
-                    fine_tune_start,
-                    fine_tune_end_date,
-                )
-                st.session_state.update(
-                    {
-                        "preprocessed": combined,
-                        "evaluation": evaluation,
-                        "training_summary": summary,
-                        "training_window": (
-                            st.session_state["training_window"][0],
-                            fine_tune_end_date,
-                        ),
-                    }
-                )
-                history = st.session_state["run_history"]
-                history.append(
-                    {
-                        "type": "fine-tune",
-                        "summary": summary,
-                        "window": (fine_tune_start, fine_tune_end_date),
-                    }
-                )
-            logger.info(
-                "Fine-tuned model for %s adding window %s → %s",
-                ticker,
-                fine_tune_start,
-                fine_tune_end_date,
-            )
-            st.session_state.update(
-                {
-                    "preprocessed": combined,
-                    "evaluation": evaluation,
-                    "training_summary": summary,
                     "training_window": (
                         st.session_state["training_window"][0],
                         fine_tune_end_date,
                     ),
-                        "success_message": "Fine-tuning complete.",
+                    "success_message": "Fine-tuning complete.",
                 }
             )
             history = st.session_state["run_history"]
@@ -448,6 +376,74 @@ else:
             {"State": list(range(len(pred["probabilities"]))), "Probability": pred["probabilities"]}
         ).set_index("State")
         st.bar_chart(prob_df)
+
+    st.subheader("Backtesting")
+    with st.expander("Backtest Settings", expanded=False):
+        bt_col1, bt_col2 = st.columns(2)
+        with bt_col1:
+            bt_commission = st.number_input(
+                "Commission (per side)", value=0.001, min_value=0.0,
+                max_value=0.1, step=0.0005, format="%.4f",
+            )
+            bt_slippage = st.number_input(
+                "Slippage (per side)", value=0.0005, min_value=0.0,
+                max_value=0.1, step=0.0005, format="%.4f",
+            )
+        with bt_col2:
+            bt_position_size = st.slider(
+                "Position Size", min_value=0.1, max_value=1.0, value=1.0, step=0.1,
+            )
+            bt_initial_capital = st.number_input(
+                "Initial Capital ($)", value=10_000.0, min_value=100.0, step=1000.0,
+            )
+    if st.button("Run Backtest", type="primary"):
+        try:
+            bt_cfg = BacktestConfig(
+                initial_capital=bt_initial_capital,
+                position_size=bt_position_size,
+                commission=bt_commission,
+                slippage=bt_slippage,
+            )
+            engine = BacktestEngine(bt_cfg)
+            hidden_states = st.session_state["model"].model.predict(dataset.features)
+            with st.spinner("Running backtest..."):
+                result = engine.run(dataset.frame, hidden_states, evaluation.regime_summary)
+            st.session_state["backtest_result"] = result
+            logger.info(
+                "Backtest complete: trades=%d sharpe=%.2f return=%.2f%%",
+                result.n_trades, result.sharpe_ratio, result.total_return * 100,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Backtest failed: %s", exc)
+            st.error(f"Backtest failed: {exc}")
+
+    if st.session_state["backtest_result"] is not None:
+        result = st.session_state["backtest_result"]
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("Total Return", f"{result.total_return:.2%}")
+        m2.metric("Sharpe Ratio", f"{result.sharpe_ratio:.2f}")
+        m3.metric("Max Drawdown", f"{result.max_drawdown:.2%}")
+        m4.metric("Win Rate", f"{result.win_rate:.1%}" if result.n_trades else "N/A")
+        m5.metric("Trades", result.n_trades)
+
+        r1, r2 = st.columns(2)
+        r1.metric("Annualized Return", f"{result.annualized_return:.2%}")
+        r2.metric("Benchmark (Buy & Hold)", f"{result.benchmark_return:.2%}")
+
+        st.line_chart(result.equity_curve, use_container_width=True)
+
+        if result.trades:
+            trade_rows = [
+                {
+                    "Entry": t.entry_date.strftime("%Y-%m-%d"),
+                    "Exit": t.exit_date.strftime("%Y-%m-%d"),
+                    "Entry $": round(t.entry_price, 2),
+                    "Exit $": round(t.exit_price, 2),
+                    "PnL": round(t.pnl, 2),
+                }
+                for t in result.trades
+            ]
+            st.dataframe(pd.DataFrame(trade_rows), use_container_width=True)
 
     st.subheader("Recent Data")
     st.dataframe(dataset.frame.tail(10), use_container_width=True)
