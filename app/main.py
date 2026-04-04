@@ -13,6 +13,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model.evaluation import EvaluationBundle, run_evaluation
 from model.hmm import HMMConfig, HMMStockPredictor, TrainingSummary
 from model.logging_utils import LOG_FILE, configure_logging
+from model.retraining_pipeline import RetrainingConfig, RetrainingPipeline
+from model.scheduler import RetrainingScheduler
 from model.utils import (
     PreprocessedData,
     PreprocessingConfig,
@@ -49,6 +51,8 @@ def initialize_session_state() -> None:
         "log_messages": [],
         "_streamlit_log_attached": False,
         "success_message": None,
+        "retraining_scheduler": None,
+        "last_cycle_summary": None,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -170,6 +174,34 @@ fine_tune_clicked = st.sidebar.button(
     help="Train a model first before fine-tuning." if not can_fine_tune else "Train the model with the selected configuration.",
 )
 
+st.sidebar.header("Auto-Retraining")
+interval_hours = st.sidebar.slider(
+    "Retrain interval (hours)", min_value=1, max_value=168, value=24
+)
+sched: RetrainingScheduler | None = st.session_state["retraining_scheduler"]
+is_sched_running = sched is not None and sched.is_running
+
+col_start, col_stop = st.sidebar.columns(2)
+if col_start.button("Start", disabled=is_sched_running, key="sched_start"):
+    pipeline = RetrainingPipeline(
+        RetrainingConfig(ticker=ticker, registry_dir="models")
+    )
+    new_sched = RetrainingScheduler(pipeline, interval_hours=float(interval_hours))
+    new_sched.start()
+    st.session_state["retraining_scheduler"] = new_sched
+if col_stop.button("Stop", disabled=not is_sched_running, key="sched_stop"):
+    sched.stop()
+if st.sidebar.button("Run Now", key="sched_run_now"):
+    pipeline = RetrainingPipeline(
+        RetrainingConfig(ticker=ticker, registry_dir="models")
+    )
+    with st.spinner("Running retraining cycle..."):
+        cycle_summary = pipeline.run_cycle()
+    st.session_state["last_cycle_summary"] = cycle_summary
+st.sidebar.caption(
+    f"Scheduler: {'🟢 Running' if is_sched_running else '🔴 Stopped'}"
+)
+
 if st.session_state.get("success_message"):
     st.sidebar.success(st.session_state["success_message"])
     st.session_state["success_message"] = None
@@ -271,91 +303,11 @@ if fine_tune_clicked:
                     "preprocessed": combined,
                     "evaluation": evaluation,
                     "training_summary": summary,
-                    "training_window": (start_date, end_date),
-                    "preprocess_config": preprocess_cfg,
-                    "model_config": model_cfg,
-                    "ticker": ticker,
-                    "run_history": [
-                        {
-                            "type": "train",
-                            "summary": summary,
-                            "window": (start_date, end_date),
-                        }
-                    ],
-                    "last_prediction": None,
-                    "success_message": "Model trained successfully.",
-                }
-            )
-            st.rerun()
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("Training failed: %s", exc)
-            st.sidebar.error(f"Training failed: {exc}")
-
-
-if fine_tune_clicked:
-    current_end = st.session_state["training_window"][1]
-    fine_tune_start = current_end + dt.timedelta(days=1)
-    if fine_tune_end_date <= fine_tune_start:
-        st.sidebar.warning("Choose an end date after the latest trained date.")
-    else:
-        current_end = st.session_state["training_window"][1]
-        fine_tune_start = current_end + dt.timedelta(days=1)
-        if fine_tune_end_date <= fine_tune_start:
-            st.sidebar.warning("Choose an end date after the latest trained date.")
-        else:
-            try:
-                preprocess_cfg = st.session_state["preprocess_config"]
-                with st.spinner("Fine-tuning with latest data..."):
-                    new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
-                    new_dataset = preprocess_data(new_raw, preprocess_cfg)
-                    if new_dataset.features.size == 0:
-                        raise ValueError("No usable new data was returned for this window.")
-                    combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
-                    summary = st.session_state["model"].fine_tune(combined.features)
-                    evaluation = run_evaluation(
-                        st.session_state["model"], combined.frame, combined.features
-                    )
-                logger.info(
-                    "Fine-tuned model for %s adding window %s → %s",
-                    ticker,
-                    fine_tune_start,
-                    fine_tune_end_date,
-                )
-                st.session_state.update(
-                    {
-                        "preprocessed": combined,
-                        "evaluation": evaluation,
-                        "training_summary": summary,
-                        "training_window": (
-                            st.session_state["training_window"][0],
-                            fine_tune_end_date,
-                        ),
-                    }
-                )
-                history = st.session_state["run_history"]
-                history.append(
-                    {
-                        "type": "fine-tune",
-                        "summary": summary,
-                        "window": (fine_tune_start, fine_tune_end_date),
-                    }
-                )
-            logger.info(
-                "Fine-tuned model for %s adding window %s → %s",
-                ticker,
-                fine_tune_start,
-                fine_tune_end_date,
-            )
-            st.session_state.update(
-                {
-                    "preprocessed": combined,
-                    "evaluation": evaluation,
-                    "training_summary": summary,
                     "training_window": (
                         st.session_state["training_window"][0],
                         fine_tune_end_date,
                     ),
-                        "success_message": "Fine-tuning complete.",
+                    "success_message": "Fine-tuning complete.",
                 }
             )
             history = st.session_state["run_history"]
@@ -448,6 +400,25 @@ else:
             {"State": list(range(len(pred["probabilities"]))), "Probability": pred["probabilities"]}
         ).set_index("State")
         st.bar_chart(prob_df)
+
+    st.subheader("Drift Monitor")
+    cycle = st.session_state.get("last_cycle_summary")
+    if cycle is None:
+        st.info(
+            "No retraining cycle has run yet. Use the Auto-Retraining controls in the sidebar."
+        )
+    else:
+        dcol1, dcol2, dcol3 = st.columns(3)
+        dcol1.metric("Last Run", cycle.ran_at.strftime("%Y-%m-%d %H:%M UTC"))
+        dcol2.metric("Retrained", "Yes" if cycle.retrained else "No")
+        dcol3.metric("Reason", cycle.reason)
+        if cycle.drift_status.accuracy is not None:
+            st.caption(
+                f"Accuracy: {cycle.drift_status.accuracy:.2%} | "
+                f"Log-likelihood: {cycle.drift_status.log_likelihood:.3f}"
+            )
+        if cycle.model_version is not None:
+            st.caption(f"New model version: v{cycle.model_version}")
 
     st.subheader("Recent Data")
     st.dataframe(dataset.frame.tail(10), use_container_width=True)
