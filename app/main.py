@@ -378,6 +378,14 @@ if st.session_state["model"] is None:
         "Train the model using the controls on the left to unlock evaluation and predictions.",
         icon="👈",
     )
+    st.markdown(
+        """
+        ### Getting Started
+        1. Select a **Stock Ticker** and **Training Date Range**.
+        2. Choose **Features** (e.g., Daily Returns, Rolling Volatility).
+        3. Click **Train / Re-train Model** in the sidebar.
+        """
+    )
 else:
     summary = st.session_state["training_summary"]
     dataset = st.session_state["preprocessed"]

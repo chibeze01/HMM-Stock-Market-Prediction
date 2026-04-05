@@ -14,3 +14,7 @@
 ## 2026-04-01 - Preemptively disable fine-tune button and fix stale UI state
 **Learning:** In Streamlit apps, dependent UI elements (like buttons that require an action to be completed first) can appear in a 'stale' state after a state-mutating action is performed because the script execution stops rendering elements that have already been evaluated. Also, disabling an action visually and explaining why with a tooltip provides better UX than allowing the action and showing an error afterward.
 **Action:** When a main action (like model training) updates the session state in a way that unlocks other UI components, add `st.rerun()` at the end of the success block to force an immediate re-render and fix stale UI states. Additionally, preemptively disable dependent buttons using `disabled` and `help` tooltips to explain prerequisites.
+
+## 2026-04-05 - Enhance empty states with helpful guidance
+**Learning:** Empty states (like when a model hasn't been trained yet) can be confusing. Simply telling the user to "use the controls on the left" is less effective than providing a clear, numbered "Getting Started" guide right where the content will appear.
+**Action:** Always include actionable, step-by-step guidance in empty states to orient the user and reduce cognitive load.
