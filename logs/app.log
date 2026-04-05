@@ -1,0 +1,60 @@
+2026-04-05 10:48:27,540 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:27,634 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:27,642 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:27,657 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:27,662 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:27,676 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:27,691 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:27,706 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:27,719 | INFO | model.evaluation | Evaluation completed: regimes=1 accuracy_points=75 loglike_points=75
+2026-04-05 10:48:27,719 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:27,758 | INFO | HMMStockPredictor | Training finished. LogLik=-85.56 Samples=60
+2026-04-05 10:48:27,758 | INFO | HMMStockPredictor | Fine-tuning with 30 new samples retain_history=True
+2026-04-05 10:48:27,758 | INFO | HMMStockPredictor | Training HMM with 90 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:27,802 | INFO | HMMStockPredictor | Training finished. LogLik=-134.93 Samples=90
+2026-04-05 10:48:27,803 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:27,836 | INFO | HMMStockPredictor | Training finished. LogLik=-85.56 Samples=60
+2026-04-05 10:48:27,838 | INFO | HMMStockPredictor | Saved HMM model to /tmp/tmp4wbp73hp/model.pkl
+2026-04-05 10:48:27,839 | INFO | HMMStockPredictor | Loaded HMM model from /tmp/tmp4wbp73hp/model.pkl
+2026-04-05 10:48:27,840 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=7)
+2026-04-05 10:48:27,854 | INFO | HMMStockPredictor | Training finished. LogLik=-125.88 Samples=60
+2026-04-05 10:48:47,367 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:47,414 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:47,421 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:47,434 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:47,438 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:47,452 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:47,467 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:47,480 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:48:47,493 | INFO | model.evaluation | Evaluation completed: regimes=1 accuracy_points=75 loglike_points=75
+2026-04-05 10:48:47,493 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:47,527 | INFO | HMMStockPredictor | Training finished. LogLik=-85.56 Samples=60
+2026-04-05 10:48:47,527 | INFO | HMMStockPredictor | Fine-tuning with 30 new samples retain_history=True
+2026-04-05 10:48:47,527 | INFO | HMMStockPredictor | Training HMM with 90 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:47,567 | INFO | HMMStockPredictor | Training finished. LogLik=-134.93 Samples=90
+2026-04-05 10:48:47,567 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:48:47,601 | INFO | HMMStockPredictor | Training finished. LogLik=-85.56 Samples=60
+2026-04-05 10:48:47,603 | INFO | HMMStockPredictor | Saved HMM model to /tmp/tmpx8yj41aj/model.pkl
+2026-04-05 10:48:47,604 | INFO | HMMStockPredictor | Loaded HMM model from /tmp/tmpx8yj41aj/model.pkl
+2026-04-05 10:48:47,605 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=7)
+2026-04-05 10:48:47,620 | INFO | HMMStockPredictor | Training finished. LogLik=-125.88 Samples=60
+2026-04-05 10:50:54,244 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:50:54,296 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:50:54,303 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:50:54,317 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:50:54,322 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:50:54,336 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:50:54,352 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:50:54,366 | INFO | HMMStockPredictor | Training finished. LogLik=521.22 Samples=79
+2026-04-05 10:50:54,379 | INFO | model.evaluation | Evaluation completed: regimes=1 accuracy_points=75 loglike_points=75
+2026-04-05 10:50:54,379 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:50:54,413 | INFO | HMMStockPredictor | Training finished. LogLik=-85.56 Samples=60
+2026-04-05 10:50:54,413 | INFO | HMMStockPredictor | Fine-tuning with 30 new samples retain_history=True
+2026-04-05 10:50:54,414 | INFO | HMMStockPredictor | Training HMM with 90 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:50:54,453 | INFO | HMMStockPredictor | Training finished. LogLik=-134.93 Samples=90
+2026-04-05 10:50:54,453 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-04-05 10:50:54,487 | INFO | HMMStockPredictor | Training finished. LogLik=-85.56 Samples=60
+2026-04-05 10:50:54,490 | INFO | HMMStockPredictor | Saved HMM model to /tmp/tmpgn9_uje4/model.pkl
+2026-04-05 10:50:54,490 | INFO | HMMStockPredictor | Loaded HMM model from /tmp/tmpgn9_uje4/model.pkl
+2026-04-05 10:50:54,491 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=7)
+2026-04-05 10:50:54,505 | INFO | HMMStockPredictor | Training finished. LogLik=-125.88 Samples=60

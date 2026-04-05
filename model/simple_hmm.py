@@ -53,8 +53,11 @@ class GaussianHMM:
         return X[choices].copy()
 
     def _assign_clusters(self, X: np.ndarray, means: np.ndarray) -> np.ndarray:
-        distances = np.linalg.norm(X[:, None, :] - means[None, :, :], axis=2)
-        return np.argmin(distances, axis=1)
+        # ⚡ Bolt: Optimize pairwise distance calculations by avoiding explicit broadcasting.
+        # Broadcasting creates memory-intensive intermediate arrays (N x K x D).
+        # Using expanded squared distance formula with matrix multiplication is much faster.
+        distances_sq = -2 * np.dot(X, means.T) + np.sum(means**2, axis=1)
+        return np.argmin(distances_sq, axis=1)
 
     def _estimate_transitions(self, labels: np.ndarray) -> np.ndarray:
         trans = np.ones((self.n_components, self.n_components))  # add-one smoothing
