@@ -13,3 +13,6 @@
 ## 2024-05-24 - Vectorizing Gaussian Log Likelihood Computation
 **Learning:** Replacing row-by-row iteration in Python list comprehensions with array-wide vectorized operations (e.g. `np.einsum('ni,ij,nj->n', diff, inv, diff)` for quadratic forms) entirely eliminates a performance bottleneck. It prevents redundant calculations, such as inverting covariance matrices and calculating determinants per-sample.
 **Action:** When performing matrix operations on a list of samples against a common parameter (like a cluster mean/covariance), always pass the entire data array and use `np.einsum` to evaluate the expression over the 'N' dimension at once.
+## 2024-04-07 - Avoid explicit broadcasting for pairwise distances
+**Learning:** Using explicit broadcasting (e.g., `X[:, None, :] - means[None, :, :]`) to compute pairwise distances between two arrays creates a massive 3D intermediate array in memory, which acts as a huge performance and memory bottleneck.
+**Action:** When computing pairwise Euclidean distances (like in clustering or K-Means), use the expanded squared distance formula with matrix multiplication: `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. It is much faster and avoids the memory overhead.
