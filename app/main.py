@@ -155,7 +155,9 @@ train_clicked = st.sidebar.button(
     use_container_width=True,
     type="primary",
     disabled=not train_can_click,
-    help="Select at least one feature to train the model." if not train_can_click else "Train the model with the selected configuration.",
+    help="Select at least one feature to train the model."
+    if not train_can_click
+    else "Train the model with the selected configuration.",
 )
 
 st.sidebar.header("Fine-Tune")
@@ -167,12 +169,15 @@ fine_tune_clicked = st.sidebar.button(
     "Fine-Tune with Recent Data",
     use_container_width=True,
     disabled=not can_fine_tune,
-    help="Train a model first before fine-tuning." if not can_fine_tune else "Train the model with the selected configuration.",
+    help="Train a model first before fine-tuning."
+    if not can_fine_tune
+    else "Train the model with the selected configuration.",
 )
 
 if st.session_state.get("success_message"):
     st.sidebar.success(st.session_state["success_message"])
     st.session_state["success_message"] = None
+
 
 def train_pipeline(
     ticker_symbol: str,
@@ -330,6 +335,7 @@ if fine_tune_clicked:
                             st.session_state["training_window"][0],
                             fine_tune_end_date,
                         ),
+                        "success_message": "Fine-tuning complete.",
                     }
                 )
                 history = st.session_state["run_history"]
@@ -340,43 +346,27 @@ if fine_tune_clicked:
                         "window": (fine_tune_start, fine_tune_end_date),
                     }
                 )
-            logger.info(
-                "Fine-tuned model for %s adding window %s → %s",
-                ticker,
-                fine_tune_start,
-                fine_tune_end_date,
-            )
-            st.session_state.update(
-                {
-                    "preprocessed": combined,
-                    "evaluation": evaluation,
-                    "training_summary": summary,
-                    "training_window": (
-                        st.session_state["training_window"][0],
-                        fine_tune_end_date,
-                    ),
-                        "success_message": "Fine-tuning complete.",
-                }
-            )
-            history = st.session_state["run_history"]
-            history.append(
-                {
-                    "type": "fine-tune",
-                    "summary": summary,
-                    "window": (fine_tune_start, fine_tune_end_date),
-                }
-            )
-            st.rerun()
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("Fine-tuning failed: %s", exc)
-            st.sidebar.error(f"Fine-tuning failed: {exc}")
+                st.rerun()
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("Fine-tuning failed: %s", exc)
+                st.sidebar.error(f"Fine-tuning failed: {exc}")
 
 
 # Main layout -----------------------------------------------------------------------
 if st.session_state["model"] is None:
     st.info(
-        "Train the model using the controls on the left to unlock evaluation and predictions.",
+        "Welcome! Train the model using the controls on the left to unlock evaluation "
+        "and predictions.",
         icon="👈",
+    )
+    st.markdown(
+        """
+        ### Getting Started
+        1. **Configure Data**: Select the stock ticker, date range, and features.
+        2. **Set Parameters**: Adjust the model's hidden states and covariance.
+        3. **Train Model**: Click the primary button to train the HMM.
+        4. **Analyze**: Explore the regime summary, rolling metrics, and predict the next state.
+        """
     )
 else:
     summary = st.session_state["training_summary"]
