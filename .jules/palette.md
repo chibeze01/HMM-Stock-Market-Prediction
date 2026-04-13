@@ -18,3 +18,6 @@
 ## 2026-04-12 - Improve empty state with step-by-step Getting Started guide
 **Learning:** Providing a numbered 'Getting Started' step-by-step guide in empty states (e.g., when a model hasn't been trained yet) significantly reduces cognitive load and orients users compared to a generic instruction.
 **Action:** Enhance empty states by explicitly guiding users through the required actions with numbered lists or similar clear visual structures.
+## 2024-05-18 - Actionable empty states
+**Learning:** Empty states in Streamlit applications shouldn't just state what's missing, they should provide actionable guidance to the user. For example, instead of just saying "Rolling accuracy series will appear once enough data is available.", telling the user to "**Try expanding your training date range** to generate this chart" provides a clear next step. Adding an icon like `icon="📈"` also improves the visual hierarchy.
+**Action:** When creating empty states, always include an actionable next step for the user and consider adding an icon for visual interest.
