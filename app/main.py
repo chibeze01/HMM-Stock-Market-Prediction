@@ -375,7 +375,11 @@ if fine_tune_clicked:
 # Main layout -----------------------------------------------------------------------
 if st.session_state["model"] is None:
     st.info(
-        "Train the model using the controls on the left to unlock evaluation and predictions.",
+        "**Getting Started**\n\n"
+        "1. **Select Data**: Choose a stock ticker and date range.\n"
+        "2. **Configure Features**: Select indicators (like returns or volatility) for the model.\n"
+        "3. **Train Model**: Click the primary 'Train' button to detect market regimes.\n"
+        "4. **Explore**: Once trained, review evaluation metrics and make predictions.",
         icon="👈",
     )
 else:
