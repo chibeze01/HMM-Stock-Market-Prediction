@@ -1,3 +1,6 @@
 ## 2024-05-24 - Proactive Validation in Streamlit Buttons
 **Learning:** Instead of allowing a user to click a button and showing an error message (like trying to fine-tune a model when no model exists), Streamlit's `st.button` supports a `disabled` parameter. Coupling this with a dynamic `help` string provides a much better UX by proactively preventing invalid actions and explaining why the action is unavailable.
 **Action:** Always prefer disabling buttons with explanatory tooltips over rendering error states after a user clicks an invalid action in Streamlit applications.
+## 2024-05-25 - Actionable Empty States in Evaluation Tabs
+**Learning:** Raw messages like "More data is needed" or "Rolling accuracy series will appear once enough data is available" inside `st.info` provide poor UX when a chart fails to render. Using Markdown formatting to create a clear visual hierarchy (bold titles) alongside actionable tooltips (e.g., "**Tip:** Try expanding the training date range in the sidebar.") makes the empty state actually helpful and guides the user toward a solution.
+**Action:** When creating empty states for missing data or unrendered components, always include a title, a brief explanation, and an actionable tip guiding the user on how to populate the state. Include an icon to improve visibility.
