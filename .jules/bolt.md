@@ -16,3 +16,6 @@
 ## 2024-05-25 - Avoid explicit broadcasting for pairwise distances
 **Learning:** Using explicit broadcasting like `X[:, None, :] - means[None, :, :]` to calculate pairwise distances in NumPy creates massive, memory-intensive intermediate 3D arrays, acting as a performance bottleneck.
 **Action:** Use matrix multiplication instead. By expanding the squared distance formula `(x-y)^2 = x^2 - 2xy + y^2` and dropping the `x^2` term (since it's constant for argmin), you can compute pseudo-distances using `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. This is much faster and uses far less memory.
+## 2024-06-10 - Use np.add.at instead of loops or fancy indexing for accumulating counts
+**Learning:** When building a transition matrix or similar histogram-like structure from sequences of states, Python loops are slow. However, using simple fancy indexing like `matrix[indices1, indices2] += 1` is subtly broken: it won't properly accumulate multiple updates to the exact same cell in a single operation.
+**Action:** Use `np.add.at(matrix, (indices1, indices2), value)` which correctly handles unbuffered accumulations in C. It provides the correctness of a loop with the speed of vectorized NumPy.

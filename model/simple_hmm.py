@@ -62,8 +62,10 @@ class GaussianHMM:
 
     def _estimate_transitions(self, labels: np.ndarray) -> np.ndarray:
         trans = np.ones((self.n_components, self.n_components))  # add-one smoothing
-        for prev, nxt in zip(labels[:-1], labels[1:], strict=False):
-            trans[prev, nxt] += 1
+        # ⚡ Bolt: Replaced Python loop with vectorized np.add.at for O(N) C-level accumulation.
+        # Standard fancy indexing (trans[labels[:-1], labels[1:]] += 1) fails to accumulate
+        # repeated pairs properly. np.add.at correctly buffers and applies all increments.
+        np.add.at(trans, (labels[:-1], labels[1:]), 1)
         trans /= trans.sum(axis=1, keepdims=True)
         return trans
 
