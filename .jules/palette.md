@@ -18,3 +18,7 @@
 ## 2026-04-12 - Improve empty state with step-by-step Getting Started guide
 **Learning:** Providing a numbered 'Getting Started' step-by-step guide in empty states (e.g., when a model hasn't been trained yet) significantly reduces cognitive load and orients users compared to a generic instruction.
 **Action:** Enhance empty states by explicitly guiding users through the required actions with numbered lists or similar clear visual structures.
+
+## 2024-06-25 - Enhance empty states for evaluation metrics
+**Learning:** Empty states without actionable guidance or visual hierarchy fail to provide clear user direction and increase cognitive load. Adding structured formatting (like bold headers) and icons improves readability.
+**Action:** Consistently enhance empty states across the application by providing structured text, actionable next steps, and descriptive icons.
