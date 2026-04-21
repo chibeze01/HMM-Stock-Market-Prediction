@@ -18,3 +18,7 @@
 ## 2026-04-12 - Improve empty state with step-by-step Getting Started guide
 **Learning:** Providing a numbered 'Getting Started' step-by-step guide in empty states (e.g., when a model hasn't been trained yet) significantly reduces cognitive load and orients users compared to a generic instruction.
 **Action:** Enhance empty states by explicitly guiding users through the required actions with numbered lists or similar clear visual structures.
+
+## 2026-04-14 - Improve component-level empty states with structured guidance
+**Learning:** Component-level empty states (like those in tabs for missing data) often default to simple text, which can leave users unsure of what to do next. Enhancing these states with structured text (like bolded headers), clear and actionable next steps ("Try extending the training window..."), and relevant visual icons (like `📈` or `📉`) significantly reduces cognitive load and improves the overall UX by explicitly guiding the user on how to populate the data.
+**Action:** Always enhance empty state messages (both global and component-level, such as `st.info` blocks) by providing structured headings, actionable guidance for next steps, and contextual icons.

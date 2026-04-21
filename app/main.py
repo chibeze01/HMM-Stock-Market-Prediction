@@ -418,12 +418,22 @@ else:
         )
     with eval_tabs[1]:
         if evaluation.rolling_accuracy.empty:
-            st.info("Rolling accuracy series will appear once enough data is available.")
+            st.info(
+                "**No Rolling Accuracy Data Yet**\n\n"
+                "Rolling accuracy series will appear once enough data is available. "
+                "Try extending the training window or fine-tuning with more recent data.",
+                icon="📈",
+            )
         else:
             st.line_chart(evaluation.rolling_accuracy)
     with eval_tabs[2]:
         if evaluation.rolling_log_likelihood.empty:
-            st.info("Rolling log-likelihood requires additional observations.")
+            st.info(
+                "**No Log Likelihood Data Yet**\n\n"
+                "Rolling log-likelihood requires additional observations. "
+                "Try extending the training window or fine-tuning with more recent data.",
+                icon="📉",
+            )
         else:
             st.line_chart(evaluation.rolling_log_likelihood)
 
