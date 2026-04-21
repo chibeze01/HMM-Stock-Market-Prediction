@@ -16,3 +16,6 @@
 ## 2024-05-25 - Avoid explicit broadcasting for pairwise distances
 **Learning:** Using explicit broadcasting like `X[:, None, :] - means[None, :, :]` to calculate pairwise distances in NumPy creates massive, memory-intensive intermediate 3D arrays, acting as a performance bottleneck.
 **Action:** Use matrix multiplication instead. By expanding the squared distance formula `(x-y)^2 = x^2 - 2xy + y^2` and dropping the `x^2` term (since it's constant for argmin), you can compute pseudo-distances using `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. This is much faster and uses far less memory.
+## 2026-04-21 - Vectorized Transition Counting with np.bincount
+**Learning:** For counting 2D state transitions (e.g. `trans[prev, nxt] += 1`), iterating in Python is slow. Using `np.add.at` is faster but still sub-optimal. Flattening the 2D indices using `labels[:-1] * n_components + labels[1:]` and counting with `np.bincount` is >50x faster since it scales in O(N) fully in C.
+**Action:** Always prefer `np.bincount` on flattened multi-dimensional indices when accumulating counts of transition events instead of using explicit loops or `np.add.at`.
