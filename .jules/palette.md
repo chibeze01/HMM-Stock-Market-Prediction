@@ -18,3 +18,7 @@
 ## 2026-04-12 - Improve empty state with step-by-step Getting Started guide
 **Learning:** Providing a numbered 'Getting Started' step-by-step guide in empty states (e.g., when a model hasn't been trained yet) significantly reduces cognitive load and orients users compared to a generic instruction.
 **Action:** Enhance empty states by explicitly guiding users through the required actions with numbered lists or similar clear visual structures.
+
+## 2026-04-22 - Enhance Empty States with Structured Guidance
+**Learning:** Generic, text-only empty states (e.g., "Not enough data") leave users guessing about how to resolve the issue. By structuring empty states with bold headers, providing clear, actionable next steps (like "Try expanding the date range"), and including contextual icons, you significantly reduce cognitive load and improve the user's sense of control.
+**Action:** Always format empty state messages using structured text (bold headers), actionable guidance, and visual cues (icons) rather than generic single-line strings.
