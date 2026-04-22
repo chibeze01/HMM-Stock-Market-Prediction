@@ -16,3 +16,6 @@
 ## 2024-05-25 - Avoid explicit broadcasting for pairwise distances
 **Learning:** Using explicit broadcasting like `X[:, None, :] - means[None, :, :]` to calculate pairwise distances in NumPy creates massive, memory-intensive intermediate 3D arrays, acting as a performance bottleneck.
 **Action:** Use matrix multiplication instead. By expanding the squared distance formula `(x-y)^2 = x^2 - 2xy + y^2` and dropping the `x^2` term (since it's constant for argmin), you can compute pseudo-distances using `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. This is much faster and uses far less memory.
+## 2024-05-26 - Accelerate Transition Matrix Estimation with np.bincount
+**Learning:** To efficiently estimate HMM transition matrices or accumulate multi-dimensional event counts from sequences, explicit Python loops are slow. Using `np.bincount` on flattened transition indices (`labels[:-1] * n_components + labels[1:]`) followed by `.reshape()` is an O(N) C-level operation that is significantly faster (>10x).
+**Action:** Always prefer `np.bincount` on flattened multi-dimensional indices instead of explicit Python loops or using `np.add.at` for accumulating counts in sequence data.
