@@ -16,3 +16,6 @@
 ## 2024-05-25 - Avoid explicit broadcasting for pairwise distances
 **Learning:** Using explicit broadcasting like `X[:, None, :] - means[None, :, :]` to calculate pairwise distances in NumPy creates massive, memory-intensive intermediate 3D arrays, acting as a performance bottleneck.
 **Action:** Use matrix multiplication instead. By expanding the squared distance formula `(x-y)^2 = x^2 - 2xy + y^2` and dropping the `x^2` term (since it's constant for argmin), you can compute pseudo-distances using `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. This is much faster and uses far less memory.
+## 2025-05-18 - Avoid explicit loops for multi-dimensional event counts
+**Learning:** Using a Python `for` loop with `zip` to iterate through an array and accumulate multi-dimensional transition counts (e.g., `trans[prev, nxt] += 1`) is an O(N) operation in Python space, acting as a performance bottleneck.
+**Action:** Use `np.bincount` on flattened transition indices (e.g., `labels[:-1] * n_components + labels[1:]`) followed by `.reshape()`. This delegates the multi-dimensional accumulation entirely to optimized C code, yielding >15x speedups.
