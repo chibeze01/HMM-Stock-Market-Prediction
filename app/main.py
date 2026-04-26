@@ -169,6 +169,22 @@ if st.session_state.get("success_message"):
 
 # ── Train ────────────────────────────────────────────────────────────────────────
 
+def train_pipeline(
+    ticker_symbol: str,
+    start: dt.date,
+    end: dt.date,
+    preprocess_cfg: PreprocessingConfig,
+    model_cfg: HMMConfig,
+) -> tuple[HMMStockPredictor, PreprocessedData, EvaluationBundle, TrainingSummary]:
+    raw = fetch_stock_data(ticker_symbol, start, end)
+    dataset = preprocess_data(raw, preprocess_cfg)
+    ensure_enough_observations(dataset.features, model_cfg)
+    predictor = HMMStockPredictor(model_cfg)
+    summary = predictor.train(dataset.features)
+    evaluation = run_evaluation(predictor, dataset.frame, dataset.features)
+    return predictor, dataset, evaluation, summary
+
+
 if train_clicked:
     try:
         with st.spinner("Training model via API..."):
@@ -280,7 +296,11 @@ if fine_tune_clicked:
 
 if st.session_state["model_id"] is None:
     st.info(
-        "Train the model using the controls on the left to unlock evaluation and predictions.",
+        "**Getting Started**\n\n"
+        "1. **Select Data**: Choose a stock ticker and date range.\n"
+        "2. **Configure Features**: Select indicators (like returns or volatility) for the model.\n"
+        "3. **Train Model**: Click the primary 'Train' button to detect market regimes.\n"
+        "4. **Explore**: Once trained, review evaluation metrics and make predictions.",
         icon="👈",
     )
 else:
