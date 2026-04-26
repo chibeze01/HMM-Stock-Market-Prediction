@@ -18,3 +18,10 @@
 ## 2026-04-06 - Replace generic empty states with actionable Getting Started guides
 **Learning:** Presenting a generic informational message (like "Train the model to unlock evaluation") in an empty application state leaves users guessing about the exact steps required to reach the desired state. Providing a structured, numbered "Getting Started" guide significantly reduces cognitive load and provides a clear path to value.
 **Action:** When designing an application's initial empty state, replace generic "do x to get y" messages with explicit, numbered, step-by-step instructions that map directly to the application's UI controls.
+## 2026-04-12 - Improve empty state with step-by-step Getting Started guide
+**Learning:** Providing a numbered 'Getting Started' step-by-step guide in empty states (e.g., when a model hasn't been trained yet) significantly reduces cognitive load and orients users compared to a generic instruction.
+**Action:** Enhance empty states by explicitly guiding users through the required actions with numbered lists or similar clear visual structures.
+
+## 2026-04-25 - Enhance component-level empty states with visual hierarchy
+**Learning:** Simple text messages like 'Not enough data' in Streamlit empty states lack visual impact and actionable guidance. Adding bolded headers, helpful next steps (e.g., 'Try extending the date range'), and icons (e.g., '📈') to `st.info` strings dramatically improves visual hierarchy, reduces cognitive load, and helps users recover from empty states faster.
+**Action:** When implementing empty states for Streamlit components, always use structured formatting (bold headers), actionable guidance, and visual anchors (icons).
