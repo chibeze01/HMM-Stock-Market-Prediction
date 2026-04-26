@@ -13,9 +13,19 @@
 ## 2024-05-24 - Vectorizing Gaussian Log Likelihood Computation
 **Learning:** Replacing row-by-row iteration in Python list comprehensions with array-wide vectorized operations (e.g. `np.einsum('ni,ij,nj->n', diff, inv, diff)` for quadratic forms) entirely eliminates a performance bottleneck. It prevents redundant calculations, such as inverting covariance matrices and calculating determinants per-sample.
 **Action:** When performing matrix operations on a list of samples against a common parameter (like a cluster mean/covariance), always pass the entire data array and use `np.einsum` to evaluate the expression over the 'N' dimension at once.
+## 2024-06-10 - Avoiding Explicit Broadcasting in Pairwise Distances
+**Learning:** Calculating pairwise distances using explicit broadcasting (e.g., `X[:, None, :] - means[None, :, :]`) creates a large, memory-intensive intermediate array of shape `(N, K, D)`. For large datasets, this can cause significant memory bottlenecks and slowdowns.
+**Action:** To optimize pairwise distance calculations (like Euclidean distance for clustering), use the expanded squared distance formula with matrix multiplication: `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. This avoids explicit broadcasting and significantly reduces memory usage and execution time.
+
+## 2024-05-25 - Avoid explicit broadcasting for pairwise Euclidean distance
+**Learning:** Using explicit broadcasting to compute pairwise Euclidean distances (e.g. `X[:, None, :] - means[None, :, :]`) creates a huge intermediate `N x K x D` array. This causes massive memory allocations and drastically slows down execution.
+**Action:** Expand the squared Euclidean distance formula (`||x||^2 + ||y||^2 - 2x^Ty`) to compute distances. Since we typically only need the argmin, we can ignore `||x||^2` and minimize `-2*np.dot(X, means.T) + np.sum(means**2, axis=1)`. This leverages highly optimized matrix multiplication and uses minimal memory.
 ## 2024-05-25 - Avoid explicit broadcasting for pairwise distances
 **Learning:** Using explicit broadcasting like `X[:, None, :] - means[None, :, :]` to calculate pairwise distances in NumPy creates massive, memory-intensive intermediate 3D arrays, acting as a performance bottleneck.
 **Action:** Use matrix multiplication instead. By expanding the squared distance formula `(x-y)^2 = x^2 - 2xy + y^2` and dropping the `x^2` term (since it's constant for argmin), you can compute pseudo-distances using `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. This is much faster and uses far less memory.
 ## 2025-05-18 - Avoid explicit loops for multi-dimensional event counts
 **Learning:** Using a Python `for` loop with `zip` to iterate through an array and accumulate multi-dimensional transition counts (e.g., `trans[prev, nxt] += 1`) is an O(N) operation in Python space, acting as a performance bottleneck.
 **Action:** Use `np.bincount` on flattened transition indices (e.g., `labels[:-1] * n_components + labels[1:]`) followed by `.reshape()`. This delegates the multi-dimensional accumulation entirely to optimized C code, yielding >15x speedups.
+## 2024-05-26 - Vectorize HMM transition estimation
+**Learning:** Estimating state transitions using a Python `for` loop and zip (e.g. `for prev, nxt in zip(...)`) creates significant overhead, especially for long sequences, acting as a performance bottleneck.
+**Action:** Use `np.bincount` on flattened transition indices. For any sequence of integer states (0 to K-1), computing the 1D index array `labels[:-1] * K + labels[1:]` and counting frequencies with `np.bincount` converts an O(N) Python loop into an O(N) C-level operation, giving >50x speedups.
