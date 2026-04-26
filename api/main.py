@@ -1,4 +1,5 @@
 """FastAPI application for HMM stock market prediction."""
+
 from __future__ import annotations
 
 import asyncio
@@ -160,7 +161,9 @@ def _do_predict(model_id: str):
             mr = rec.get("mean_return", 0)
             vol = rec.get("volatility", 0)
             direction = "bullish" if mr > 0 else "bearish"
-            regime_label = f"State {predicted_state}: {direction} (avg return {mr:.2%}, volatility {vol:.2%})"
+            regime_label = (
+                f"State {predicted_state}: {direction} (avg return {mr:.2%}, volatility {vol:.2%})"
+            )
             break
 
     return {
@@ -205,9 +208,7 @@ async def fine_tune(req: FineTuneRequest):
     async with lock:
         loop = asyncio.get_event_loop()
         try:
-            result = await loop.run_in_executor(
-                None, partial(_do_fine_tune, req.model_id, req)
-            )
+            result = await loop.run_in_executor(None, partial(_do_fine_tune, req.model_id, req))
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -245,11 +246,13 @@ async def list_models():
     for mid in registry.list_ids():
         entry = registry.get(mid)
         if entry:
-            result.append({
-                "model_id": mid,
-                "ticker": entry.ticker,
-                "created_at": entry.created_at.isoformat(),
-            })
+            result.append(
+                {
+                    "model_id": mid,
+                    "ticker": entry.ticker,
+                    "created_at": entry.created_at.isoformat(),
+                }
+            )
     return result
 
 

@@ -1,4 +1,5 @@
 """Integration tests for the FastAPI endpoints using Starlette TestClient."""
+
 import os
 import sys
 from unittest.mock import patch
@@ -25,6 +26,7 @@ def _make_mock_stock_data(rows: int = 100) -> pd.DataFrame:
 def _reset_registry():
     """Clear the model registry between tests to avoid state leaks."""
     from api.main import registry
+
     registry._store.clear()
     yield
 
@@ -47,20 +49,24 @@ def client(mock_fetch):
 
 def _train_model(client) -> str:
     """Helper: train a model and return its model_id."""
-    resp = client.post("/train", json={
-        "ticker": "TEST",
-        "start_date": "2020-01-01",
-        "end_date": "2023-12-31",
-        "features": ["returns", "volatility"],
-        "n_hidden_states": 3,
-        "n_iter": 50,
-        "random_state": 42,
-    })
+    resp = client.post(
+        "/train",
+        json={
+            "ticker": "TEST",
+            "start_date": "2020-01-01",
+            "end_date": "2023-12-31",
+            "features": ["returns", "volatility"],
+            "n_hidden_states": 3,
+            "n_iter": 50,
+            "random_state": 42,
+        },
+    )
     assert resp.status_code == 200, resp.text
     return resp.json()["model_id"]
 
 
 # ── Health ─────────────────────────────────────────────────────────────────────
+
 
 def test_health(client):
     resp = client.get("/health")
@@ -72,6 +78,7 @@ def test_health(client):
 
 # ── Train → Predict roundtrip ─────────────────────────────────────────────────
 
+
 def test_train_returns_model_id(client):
     model_id = _train_model(client)
     assert isinstance(model_id, str)
@@ -79,14 +86,17 @@ def test_train_returns_model_id(client):
 
 
 def test_train_response_has_evaluation(client):
-    resp = client.post("/train", json={
-        "ticker": "TEST",
-        "start_date": "2020-01-01",
-        "end_date": "2023-12-31",
-        "features": ["returns", "volatility"],
-        "n_hidden_states": 3,
-        "n_iter": 50,
-    })
+    resp = client.post(
+        "/train",
+        json={
+            "ticker": "TEST",
+            "start_date": "2020-01-01",
+            "end_date": "2023-12-31",
+            "features": ["returns", "volatility"],
+            "n_hidden_states": 3,
+            "n_iter": 50,
+        },
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert "training_summary" in body
@@ -106,12 +116,16 @@ def test_predict_after_train(client):
 
 # ── Fine-tune ─────────────────────────────────────────────────────────────────
 
+
 def test_fine_tune_after_train(client):
     model_id = _train_model(client)
-    resp = client.post("/fine-tune", json={
-        "model_id": model_id,
-        "new_end_date": "2024-06-01",
-    })
+    resp = client.post(
+        "/fine-tune",
+        json={
+            "model_id": model_id,
+            "new_end_date": "2024-06-01",
+        },
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert body["model_id"] == model_id
@@ -120,29 +134,37 @@ def test_fine_tune_after_train(client):
 
 # ── Error cases ───────────────────────────────────────────────────────────────
 
+
 def test_predict_unknown_model_returns_404(client):
     resp = client.post("/predict", json={"model_id": "nonexistent-id"})
     assert resp.status_code == 404
 
 
 def test_fine_tune_unknown_model_returns_404(client):
-    resp = client.post("/fine-tune", json={
-        "model_id": "nonexistent-id",
-        "new_end_date": "2024-06-01",
-    })
+    resp = client.post(
+        "/fine-tune",
+        json={
+            "model_id": "nonexistent-id",
+            "new_end_date": "2024-06-01",
+        },
+    )
     assert resp.status_code == 404
 
 
 def test_train_validation_error(client):
-    resp = client.post("/train", json={
-        "ticker": "",
-        "start_date": "2020-01-01",
-        "end_date": "2023-12-31",
-    })
+    resp = client.post(
+        "/train",
+        json={
+            "ticker": "",
+            "start_date": "2020-01-01",
+            "end_date": "2023-12-31",
+        },
+    )
     assert resp.status_code == 422
 
 
 # ── Models listing & deletion ─────────────────────────────────────────────────
+
 
 def test_list_models(client):
     model_id = _train_model(client)
@@ -167,6 +189,7 @@ def test_delete_nonexistent_model_returns_404(client):
 
 
 # ── Evaluation endpoint ──────────────────────────────────────────────────────
+
 
 def test_evaluation_endpoint(client):
     model_id = _train_model(client)
