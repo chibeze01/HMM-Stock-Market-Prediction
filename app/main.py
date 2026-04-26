@@ -10,6 +10,15 @@ import streamlit as st
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from model.backtesting import (
+    BacktestConfig,
+    BacktestEngine,
+    BacktestResult,
+    WalkForwardConfig,
+    walk_forward_backtest,
+)
+from model.evaluation import EvaluationBundle, run_evaluation
+from model.hmm import HMMConfig, HMMStockPredictor, TrainingSummary
 from model.logging_utils import LOG_FILE, configure_logging
 
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
@@ -39,6 +48,7 @@ def initialize_session_state() -> None:
         "log_messages": [],
         "_streamlit_log_attached": False,
         "success_message": None,
+        "backtest_result": None,
     }
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
@@ -377,6 +387,78 @@ else:
             }
         ).set_index("State")
         st.bar_chart(prob_df)
+
+    st.subheader("Backtesting")
+    with st.expander("Backtest Settings", expanded=False):
+        bt_col1, bt_col2 = st.columns(2)
+        with bt_col1:
+            bt_commission = st.number_input(
+                "Commission (per side)", value=0.001, min_value=0.0,
+                max_value=0.1, step=0.0005, format="%.4f",
+            )
+            bt_slippage = st.number_input(
+                "Slippage (per side)", value=0.0005, min_value=0.0,
+                max_value=0.1, step=0.0005, format="%.4f",
+            )
+        with bt_col2:
+            bt_position_size = st.slider(
+                "Position Size", min_value=0.1, max_value=1.0, value=1.0, step=0.1,
+            )
+            bt_initial_capital = st.number_input(
+                "Initial Capital ($)", value=10_000.0, min_value=100.0, step=1000.0,
+            )
+    if st.button("Run Backtest", type="primary"):
+        try:
+            bt_cfg = BacktestConfig(
+                initial_capital=bt_initial_capital,
+                position_size=bt_position_size,
+                commission=bt_commission,
+                slippage=bt_slippage,
+            )
+            engine = BacktestEngine(bt_cfg)
+            hidden_states = st.session_state["model"].model.predict(dataset.features)
+            with st.spinner("Running backtest..."):
+                result = engine.run(dataset.frame, hidden_states, evaluation.regime_summary)
+            st.session_state["backtest_result"] = result
+            logger.info(
+                "Backtest complete: trades=%d sharpe=%.2f return=%.2f%%",
+                result.n_trades, result.sharpe_ratio, result.total_return * 100,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Backtest failed: %s", exc)
+            st.error(f"Backtest failed: {exc}")
+
+    if st.session_state["backtest_result"] is not None:
+        result = st.session_state["backtest_result"]
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("Total Return", f"{result.total_return:.2%}")
+        m2.metric("Sharpe Ratio", f"{result.sharpe_ratio:.2f}")
+        m3.metric("Max Drawdown", f"{result.max_drawdown:.2%}")
+        m4.metric("Win Rate", f"{result.win_rate:.1%}" if result.n_trades else "N/A")
+        m5.metric("Trades", result.n_trades)
+
+        r1, r2 = st.columns(2)
+        r1.metric("Annualized Return", f"{result.annualized_return:.2%}")
+        r2.metric("Benchmark (Buy & Hold)", f"{result.benchmark_return:.2%}")
+
+        st.line_chart(result.equity_curve, use_container_width=True)
+
+        if result.trades:
+            trade_rows = [
+                {
+                    "Entry": t.entry_date.strftime("%Y-%m-%d"),
+                    "Exit": t.exit_date.strftime("%Y-%m-%d"),
+                    "Entry $": round(t.entry_price, 2),
+                    "Exit $": round(t.exit_price, 2),
+                    "PnL": round(t.pnl, 2),
+                }
+                for t in result.trades
+            ]
+            st.dataframe(pd.DataFrame(trade_rows), use_container_width=True)
+
+    st.subheader("Recent Data")
+    st.dataframe(dataset.frame.tail(10), use_container_width=True)
+    st.line_chart(dataset.frame["Close"])
 
 st.subheader("Debug Logs")
 logs_display = st.session_state.get("log_messages", [])
