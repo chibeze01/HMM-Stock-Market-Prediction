@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-import numpy as np
+import httpx
 import pandas as pd
 import streamlit as st
 
@@ -20,13 +20,8 @@ from model.backtesting import (
 from model.evaluation import EvaluationBundle, run_evaluation
 from model.hmm import HMMConfig, HMMStockPredictor, TrainingSummary
 from model.logging_utils import LOG_FILE, configure_logging
-from model.utils import (
-    PreprocessedData,
-    PreprocessingConfig,
-    fetch_stock_data,
-    merge_preprocessed,
-    preprocess_data,
-)
+
+API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
 st.set_page_config(page_title="HMM Stock Predictor", layout="wide")
 configure_logging()
@@ -43,13 +38,10 @@ class StreamlitLogHandler(logging.Handler):
 
 def initialize_session_state() -> None:
     defaults = {
-        "model": None,
-        "preprocessed": None,
+        "model_id": None,
         "evaluation": None,
         "training_summary": None,
         "training_window": None,
-        "preprocess_config": None,
-        "model_config": None,
         "ticker": None,
         "run_history": [],
         "last_prediction": None,
@@ -68,23 +60,16 @@ def reset_app() -> None:
     st.experimental_rerun()
 
 
-def describe_state(summary: pd.DataFrame, state_id: int) -> str:
-    if summary is None or state_id not in summary.index:
-        return f"State {state_id}"
-    mean_return = summary.loc[state_id, "mean_return"]
-    volatility = summary.loc[state_id, "volatility"]
-    direction = "bullish" if mean_return > 0 else "bearish"
-    return (
-        f"State {state_id}: {direction} (avg return {mean_return:.2%}, volatility {volatility:.2%})"
-    )
+def _api_post(path: str, payload: dict) -> httpx.Response:
+    return httpx.post(f"{API_BASE_URL}{path}", json=payload, timeout=120.0)
 
 
-def ensure_enough_observations(observations: np.ndarray, config: HMMConfig) -> None:
-    if observations.shape[0] < config.n_hidden_states * 3:
-        raise ValueError(
-            f"Need at least {config.n_hidden_states * 3} observations "
-            "before training. Try expanding the date range."
-        )
+def _api_get(path: str) -> httpx.Response:
+    return httpx.get(f"{API_BASE_URL}{path}", timeout=30.0)
+
+
+def _api_delete(path: str) -> httpx.Response:
+    return httpx.delete(f"{API_BASE_URL}{path}", timeout=30.0)
 
 
 initialize_session_state()
@@ -132,7 +117,7 @@ selected_feature_labels = st.sidebar.multiselect(
         "will use to learn market regimes."
     ),
 )
-selected_features = tuple(feature_labels[label] for label in selected_feature_labels)
+selected_features = [feature_labels[label] for label in selected_feature_labels]
 
 vol_window = st.sidebar.slider("Volatility Window", min_value=3, max_value=30, value=5)
 mom_window = st.sidebar.slider("Momentum Window", min_value=3, max_value=30, value=3)
@@ -151,11 +136,15 @@ hidden_states = st.sidebar.slider(
 covariance_type = st.sidebar.selectbox(
     "Covariance Type", options=["diag", "full", "spherical", "tied"], index=0
 )
-n_iter = st.sidebar.slider("Training Iterations", min_value=100, max_value=2000, value=500, step=50)
+n_iter = st.sidebar.slider(
+    "Training Iterations", min_value=100, max_value=2000, value=500, step=50
+)
 random_state = st.sidebar.number_input("Random Seed", value=42)
 
 st.sidebar.divider()
-reset_clicked = st.sidebar.button("Reset Session", use_container_width=True, on_click=reset_app)
+reset_clicked = st.sidebar.button(  # noqa: F841
+    "Reset Session", use_container_width=True, on_click=reset_app
+)
 
 train_can_click = len(selected_features) > 0
 train_clicked = st.sidebar.button(
@@ -163,24 +152,32 @@ train_clicked = st.sidebar.button(
     use_container_width=True,
     type="primary",
     disabled=not train_can_click,
-    help="Select at least one feature to train the model." if not train_can_click else "Train the model with the selected configuration.",
+    help=(
+        "Select at least one feature to train the model."
+        if not train_can_click
+        else "Train the model with the selected configuration."
+    ),
 )
 
 st.sidebar.header("Fine-Tune")
 fine_tune_end_date = st.sidebar.date_input("Extend data up to", dt.date.today())
-can_fine_tune = (
-    st.session_state["model"] is not None and st.session_state["preprocessed"] is not None
-)
+can_fine_tune = st.session_state["model_id"] is not None
 fine_tune_clicked = st.sidebar.button(
     "Fine-Tune with Recent Data",
     use_container_width=True,
     disabled=not can_fine_tune,
-    help="Train a model first before fine-tuning." if not can_fine_tune else "Train the model with the selected configuration.",
+    help=(
+        "Train a model first before fine-tuning."
+        if not can_fine_tune
+        else "Fine-tune the model with recent data."
+    ),
 )
 
 if st.session_state.get("success_message"):
     st.sidebar.success(st.session_state["success_message"])
     st.session_state["success_message"] = None
+
+# ── Train ────────────────────────────────────────────────────────────────────────
 
 def train_pipeline(
     ticker_symbol: str,
@@ -200,23 +197,29 @@ def train_pipeline(
 
 if train_clicked:
     try:
-        preprocess_cfg = PreprocessingConfig(
-            features=selected_features,
-            volatility_window=vol_window,
-            momentum_window=mom_window,
-        )
-        model_cfg = HMMConfig(
-            n_hidden_states=hidden_states,
-            covariance_type=covariance_type,
-            n_iter=n_iter,
-            random_state=int(random_state),
-        )
-        with st.spinner("Training model..."):
-            model, dataset, evaluation, summary = train_pipeline(
-                ticker, start_date, end_date, preprocess_cfg, model_cfg
+        with st.spinner("Training model via API..."):
+            resp = _api_post(
+                "/train",
+                {
+                    "ticker": ticker,
+                    "start_date": str(start_date),
+                    "end_date": str(end_date),
+                    "features": selected_features,
+                    "n_hidden_states": hidden_states,
+                    "covariance_type": covariance_type,
+                    "n_iter": n_iter,
+                    "random_state": int(random_state),
+                    "volatility_window": vol_window,
+                    "momentum_window": mom_window,
+                },
             )
+        if resp.status_code != 200:
+            detail = resp.json().get("detail", resp.text)
+            raise RuntimeError(f"API error ({resp.status_code}): {detail}")
+
+        body = resp.json()
         logger.info(
-            "Training succeeded for %s (%s → %s) states=%s features=%s",
+            "Training succeeded for %s (%s -> %s) states=%s features=%s",
             ticker,
             start_date,
             end_date,
@@ -225,107 +228,110 @@ if train_clicked:
         )
         st.session_state.update(
             {
-                "model": model,
-                "preprocessed": dataset,
-                "evaluation": evaluation,
-                "training_summary": summary,
+                "model_id": body["model_id"],
+                "evaluation": body["evaluation"],
+                "training_summary": body["training_summary"],
                 "training_window": (start_date, end_date),
-                "preprocess_config": preprocess_cfg,
-                "model_config": model_cfg,
                 "ticker": ticker,
                 "run_history": [
                     {
                         "type": "train",
-                        "summary": summary,
-                        "window": (start_date, end_date),
+                        "summary": body["training_summary"],
+                        "window": (str(start_date), str(end_date)),
                     }
                 ],
                 "last_prediction": None,
+                "success_message": "Model trained successfully.",
             }
         )
-        st.sidebar.success("Model trained successfully.")
         st.rerun()
+    except httpx.ConnectError:
+        st.sidebar.error(
+            f"Cannot connect to API at {API_BASE_URL}. Is the server running?"
+        )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Training failed: %s", exc)
         st.sidebar.error(f"Training failed: {exc}")
 
+# ── Fine-Tune ────────────────────────────────────────────────────────────────────
 
 if fine_tune_clicked:
-    current_end = st.session_state["training_window"][1]
-    fine_tune_start = current_end + dt.timedelta(days=1)
-    if fine_tune_end_date <= fine_tune_start:
-        st.sidebar.warning("Choose an end date after the latest trained date.")
-    else:
-        try:
-            preprocess_cfg = st.session_state["preprocess_config"]
-            with st.spinner("Fine-tuning with latest data..."):
-                new_raw = fetch_stock_data(ticker, fine_tune_start, fine_tune_end_date)
-                new_dataset = preprocess_data(new_raw, preprocess_cfg)
-                if new_dataset.features.size == 0:
-                    raise ValueError("No usable new data was returned for this window.")
-                combined = merge_preprocessed(st.session_state["preprocessed"], new_dataset)
-                summary = st.session_state["model"].fine_tune(combined.features)
-                evaluation = run_evaluation(
-                    st.session_state["model"], combined.frame, combined.features
-                )
-            logger.info(
-                "Fine-tuned model for %s adding window %s → %s",
-                ticker,
-                fine_tune_start,
-                fine_tune_end_date,
-            )
-            st.session_state.update(
+    try:
+        with st.spinner("Fine-tuning model via API..."):
+            resp = _api_post(
+                "/fine-tune",
                 {
-                    "preprocessed": combined,
-                    "evaluation": evaluation,
-                    "training_summary": summary,
-                    "training_window": (
-                        st.session_state["training_window"][0],
-                        fine_tune_end_date,
-                    ),
-                    "success_message": "Fine-tuning complete.",
-                }
+                    "model_id": st.session_state["model_id"],
+                    "new_end_date": str(fine_tune_end_date),
+                },
             )
-            history = st.session_state["run_history"]
-            history.append(
-                {
-                    "type": "fine-tune",
-                    "summary": summary,
-                    "window": (fine_tune_start, fine_tune_end_date),
-                }
-            )
-            st.rerun()
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("Fine-tuning failed: %s", exc)
-            st.sidebar.error(f"Fine-tuning failed: {exc}")
+        if resp.status_code != 200:
+            detail = resp.json().get("detail", resp.text)
+            raise RuntimeError(f"API error ({resp.status_code}): {detail}")
 
+        body = resp.json()
+        logger.info("Fine-tuned model for %s up to %s", ticker, fine_tune_end_date)
+        st.session_state.update(
+            {
+                "evaluation": body["evaluation"],
+                "training_summary": body["training_summary"],
+                "training_window": (
+                    st.session_state["training_window"][0],
+                    fine_tune_end_date,
+                ),
+            }
+        )
+        history = st.session_state["run_history"]
+        history.append(
+            {
+                "type": "fine-tune",
+                "summary": body["training_summary"],
+                "window": (
+                    str(st.session_state["training_window"][0]),
+                    str(fine_tune_end_date),
+                ),
+            }
+        )
+        st.session_state["success_message"] = "Fine-tuning complete."
+        st.rerun()
+    except httpx.ConnectError:
+        st.sidebar.error(
+            f"Cannot connect to API at {API_BASE_URL}. Is the server running?"
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Fine-tuning failed: %s", exc)
+        st.sidebar.error(f"Fine-tuning failed: {exc}")
 
-# Main layout -----------------------------------------------------------------------
-if st.session_state["model"] is None:
+# ── Main layout ──────────────────────────────────────────────────────────────────
+
+if st.session_state["model_id"] is None:
     st.info(
-        "Train the model using the controls on the left to unlock evaluation and predictions.",
+        "**Getting Started**\n\n"
+        "1. **Select Data**: Choose a stock ticker and date range.\n"
+        "2. **Configure Features**: Select indicators (like returns or volatility) for the model.\n"
+        "3. **Train Model**: Click the primary 'Train' button to detect market regimes.\n"
+        "4. **Explore**: Once trained, review evaluation metrics and make predictions.",
         icon="👈",
     )
 else:
     summary = st.session_state["training_summary"]
-    dataset = st.session_state["preprocessed"]
     evaluation = st.session_state["evaluation"]
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     col1.metric("Ticker", st.session_state["ticker"])
-    col2.metric("Observations", dataset.features.shape[0])
-    col3.metric("Hidden States", st.session_state["model_config"].n_hidden_states)
-    col4.metric("Log Likelihood", f"{summary.log_likelihood:.2f}")
+    col2.metric("Log Likelihood", f"{summary['log_likelihood']:.2f}")
+    col3.metric("Samples", summary["n_samples"])
 
     st.subheader("Training & Fine-Tune History")
     history_rows = []
     for record in st.session_state["run_history"]:
+        s = record["summary"]
         row = {
             "Type": record["type"],
-            "Window": f"{record['window'][0]} → {record['window'][1]}",
-            "Timestamp (UTC)": record["summary"].timestamp.strftime("%Y-%m-%d %H:%M"),
-            "Log Likelihood": round(record["summary"].log_likelihood, 2),
-            "Samples": record["summary"].n_samples,
+            "Window": f"{record['window'][0]} -> {record['window'][1]}",
+            "Timestamp (UTC)": s.get("timestamp", ""),
+            "Log Likelihood": round(s.get("log_likelihood", 0), 2),
+            "Samples": s.get("n_samples", 0),
         }
         history_rows.append(row)
     history_df = pd.DataFrame(history_rows)
@@ -334,36 +340,38 @@ else:
     st.subheader("Evaluation")
     eval_tabs = st.tabs(["Regime Summary", "Rolling Accuracy", "Log Likelihood"])
     with eval_tabs[0]:
-        st.dataframe(
-            evaluation.regime_summary.style.format(
-                {"mean_return": "{:.2%}", "volatility": "{:.2%}", "avg_close": "{:.2f}"}
-            ),
-            use_container_width=True,
-        )
+        regime_data = evaluation.get("regime_summary", [])
+        if regime_data:
+            regime_df = pd.DataFrame(regime_data)
+            st.dataframe(regime_df, use_container_width=True)
+        else:
+            st.info("No regime summary available.")
     with eval_tabs[1]:
-        if evaluation.rolling_accuracy.empty:
+        rolling_acc = evaluation.get("rolling_accuracy", [])
+        if rolling_acc:
+            st.line_chart(rolling_acc)
+        else:
             st.info("Rolling accuracy series will appear once enough data is available.")
-        else:
-            st.line_chart(evaluation.rolling_accuracy)
     with eval_tabs[2]:
-        if evaluation.rolling_log_likelihood.empty:
-            st.info("Rolling log-likelihood requires additional observations.")
+        rolling_ll = evaluation.get("rolling_log_likelihood", [])
+        if rolling_ll:
+            st.line_chart(rolling_ll)
         else:
-            st.line_chart(evaluation.rolling_log_likelihood)
+            st.info("Rolling log-likelihood requires additional observations.")
 
     st.subheader("Prediction")
     if st.button("Predict Next Regime", type="primary"):
         try:
-            predicted_state = st.session_state["model"].predict_next_day_state(dataset.features)
-            proba = st.session_state["model"].regime_probabilities(dataset.features)[-1]
-            message = describe_state(evaluation.regime_summary, predicted_state)
-            st.session_state["last_prediction"] = {
-                "state": predicted_state,
-                "probabilities": proba,
-                "message": message,
-            }
-            logger.info(
-                "Generated prediction state=%s probability=%.2f", predicted_state, proba.max()
+            resp = _api_post("/predict", {"model_id": st.session_state["model_id"]})
+            if resp.status_code != 200:
+                detail = resp.json().get("detail", resp.text)
+                raise RuntimeError(f"API error ({resp.status_code}): {detail}")
+            pred = resp.json()
+            st.session_state["last_prediction"] = pred
+            logger.info("Generated prediction state=%s", pred["predicted_state"])
+        except httpx.ConnectError:
+            st.error(
+                f"Cannot connect to API at {API_BASE_URL}. Is the server running?"
             )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Prediction failed: %s", exc)
@@ -371,9 +379,12 @@ else:
 
     if st.session_state["last_prediction"]:
         pred = st.session_state["last_prediction"]
-        st.success(f"Predicted next regime: {pred['message']}")
+        st.success(f"Predicted next regime: {pred['regime_label']}")
         prob_df = pd.DataFrame(
-            {"State": list(range(len(pred["probabilities"]))), "Probability": pred["probabilities"]}
+            {
+                "State": list(range(len(pred["probabilities"]))),
+                "Probability": pred["probabilities"],
+            }
         ).set_index("State")
         st.bar_chart(prob_df)
 
