@@ -21,6 +21,10 @@
 ## 2026-04-12 - Improve empty state with step-by-step Getting Started guide
 **Learning:** Providing a numbered 'Getting Started' step-by-step guide in empty states (e.g., when a model hasn't been trained yet) significantly reduces cognitive load and orients users compared to a generic instruction.
 **Action:** Enhance empty states by explicitly guiding users through the required actions with numbered lists or similar clear visual structures.
+
+## 2026-04-23 - Enhance empty states with structured guidance
+**Learning:** Providing structured text (like bolded headers) and actionable next steps in empty states (like charts waiting for data) reduces cognitive load and directs users toward productive actions, improving overall usability.
+**Action:** Use rich formatting and clear instructions within `st.info` or similar empty-state components instead of plain text messages.
 ## 2024-04-24 - Enhance Empty States for Component-level Missing Data
 **Learning:** Generic informational messages (like `st.info("No data available")`) in empty states increase cognitive load and leave users confused about how to resolve the issue. Providing a clear header, actionable next steps, and a relevant icon makes the UI much more helpful and intuitive.
 **Action:** Always enhance component-level empty states (e.g., when evaluation metrics are missing) by using structured text (bolded headers), explicitly describing the actionable next step (like expanding the date range), and including appropriate icons.
