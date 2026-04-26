@@ -306,11 +306,10 @@ if fine_tune_clicked:
 
 if st.session_state["model_id"] is None:
     st.info(
-        "**Getting Started**\n\n"
-        "1. **Select Data**: Choose a stock ticker and date range.\n"
-        "2. **Configure Features**: Select indicators (like returns or volatility) for the model.\n"
-        "3. **Train Model**: Click the primary 'Train' button to detect market regimes.\n"
-        "4. **Explore**: Once trained, review evaluation metrics and make predictions.",
+        "**Getting Started**\n"
+        "1. **Select a Ticker:** Enter a stock ticker in the sidebar.\n"
+        "2. **Choose Features:** Select the data inputs (e.g., Returns, Volatility).\n"
+        "3. **Train Model:** Click 'Train / Re-train Model' to learn market regimes.",
         icon="👈",
     )
 else:
