@@ -1,4 +1,5 @@
 """Unit tests for api.model_registry."""
+
 import os
 import sys
 import threading
