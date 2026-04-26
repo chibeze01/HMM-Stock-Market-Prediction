@@ -21,6 +21,9 @@
 ## 2026-04-12 - Improve empty state with step-by-step Getting Started guide
 **Learning:** Providing a numbered 'Getting Started' step-by-step guide in empty states (e.g., when a model hasn't been trained yet) significantly reduces cognitive load and orients users compared to a generic instruction.
 **Action:** Enhance empty states by explicitly guiding users through the required actions with numbered lists or similar clear visual structures.
+## 2024-04-24 - Enhance Empty States for Component-level Missing Data
+**Learning:** Generic informational messages (like `st.info("No data available")`) in empty states increase cognitive load and leave users confused about how to resolve the issue. Providing a clear header, actionable next steps, and a relevant icon makes the UI much more helpful and intuitive.
+**Action:** Always enhance component-level empty states (e.g., when evaluation metrics are missing) by using structured text (bolded headers), explicitly describing the actionable next step (like expanding the date range), and including appropriate icons.
 
 ## 2026-04-25 - Enhance component-level empty states with visual hierarchy
 **Learning:** Simple text messages like 'Not enough data' in Streamlit empty states lack visual impact and actionable guidance. Adding bolded headers, helpful next steps (e.g., 'Try extending the date range'), and icons (e.g., '📈') to `st.info` strings dramatically improves visual hierarchy, reduces cognitive load, and helps users recover from empty states faster.

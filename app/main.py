@@ -348,9 +348,9 @@ else:
     with eval_tabs[1]:
         if evaluation.rolling_accuracy.empty:
             st.info(
-                "**Not Enough Data**\n\n"
-                "Rolling accuracy series will appear once enough data is available. "
-                "Try extending the training date range.",
+                "**Not Enough Data for Rolling Accuracy**\n\n"
+                "The rolling accuracy series will appear once enough data is available.\n"
+                "Try expanding your training date range to generate this metric.",
                 icon="📈",
             )
         else:
@@ -358,10 +358,10 @@ else:
     with eval_tabs[2]:
         if evaluation.rolling_log_likelihood.empty:
             st.info(
-                "**Not Enough Data**\n\n"
-                "Rolling log-likelihood requires additional observations. "
-                "Try extending the training date range.",
-                icon="📊",
+                "**Not Enough Data for Log Likelihood**\n\n"
+                "Rolling log-likelihood requires additional observations to compute.\n"
+                "Try expanding your training date range to generate this metric.",
+                icon="📉",
             )
         else:
             st.info("Rolling log-likelihood requires additional observations.")
