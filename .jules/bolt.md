@@ -17,3 +17,6 @@
 ## 2024-05-25 - Avoid explicit broadcasting for pairwise Euclidean distance
 **Learning:** Using explicit broadcasting to compute pairwise Euclidean distances (e.g. `X[:, None, :] - means[None, :, :]`) creates a huge intermediate `N x K x D` array. This causes massive memory allocations and drastically slows down execution.
 **Action:** Expand the squared Euclidean distance formula (`||x||^2 + ||y||^2 - 2x^Ty`) to compute distances. Since we typically only need the argmin, we can ignore `||x||^2` and minimize `-2*np.dot(X, means.T) + np.sum(means**2, axis=1)`. This leverages highly optimized matrix multiplication and uses minimal memory.
+## 2024-05-25 - Avoid explicit broadcasting for pairwise distances
+**Learning:** Using explicit broadcasting like `X[:, None, :] - means[None, :, :]` to calculate pairwise distances in NumPy creates massive, memory-intensive intermediate 3D arrays, acting as a performance bottleneck.
+**Action:** Use matrix multiplication instead. By expanding the squared distance formula `(x-y)^2 = x^2 - 2xy + y^2` and dropping the `x^2` term (since it's constant for argmin), you can compute pseudo-distances using `-2 * np.dot(X, means.T) + np.sum(means**2, axis=1)`. This is much faster and uses far less memory.
