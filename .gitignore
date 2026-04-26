@@ -13,4 +13,4 @@ env/
 venv/
 
 ## data caches
-data_cache/
+data_cache/logs/

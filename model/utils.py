@@ -96,7 +96,8 @@ def fetch_stock_data(
             start_ts.date(),
             end_ts.date(),
         )
-        # ⚡ Bolt: Using read_parquet instead of read_csv. Expected to be ~10x faster.
+        # ⚡ Bolt: Using read_parquet instead of read_csv. Expected to be ~10x faster
+        # for large datasets.
         return pd.read_parquet(cache_file)
 
     try:
@@ -119,7 +120,8 @@ def fetch_stock_data(
             data = yf.download(normalized_ticker, start=start_ts, end=end_ts)
             if data.empty:
                 raise ValueError(f"No data returned for {normalized_ticker}.")
-            # ⚡ Bolt: Using to_parquet instead of to_csv. Expected to be ~10x faster.
+            # ⚡ Bolt: Using to_parquet instead of to_csv. Expected to be ~10x faster
+            # for large datasets.
             data.to_parquet(cache_file)
             logger.info("Downloaded %s rows for %s", len(data), normalized_ticker)
             return data

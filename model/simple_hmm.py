@@ -53,12 +53,13 @@ class GaussianHMM:
         return X[choices].copy()
 
     def _assign_clusters(self, X: np.ndarray, means: np.ndarray) -> np.ndarray:
-        # ⚡ Bolt: Replaced memory-intensive explicit broadcasting
-        # with expanded squared distance formula.
-        # This uses matrix multiplication to calculate distances without
-        # creating intermediate (N, K, D) arrays.
-        distances_sq = -2 * np.dot(X, means.T) + np.sum(means**2, axis=1)
-        return np.argmin(distances_sq, axis=1)
+        # ⚡ Bolt: Expanded squared Euclidean distance (||x||^2 + ||y||^2 - 2x^Ty)
+        # to use highly optimized matrix multiplication instead of explicit
+        # N x K x D broadcasting, which was a memory and performance bottleneck.
+        # We only need to minimize -2(x^Ty) + ||y||^2 since ||x||^2 is constant per point.
+        term1 = -2 * np.dot(X, means.T)
+        term2 = np.sum(means**2, axis=1)
+        return np.argmin(term1 + term2, axis=1)
 
     def _estimate_transitions(self, labels: np.ndarray) -> np.ndarray:
         trans = np.ones((self.n_components, self.n_components))  # add-one smoothing
