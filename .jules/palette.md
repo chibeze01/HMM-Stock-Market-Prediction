@@ -32,3 +32,7 @@
 ## 2026-04-25 - Enhance component-level empty states with visual hierarchy
 **Learning:** Simple text messages like 'Not enough data' in Streamlit empty states lack visual impact and actionable guidance. Adding bolded headers, helpful next steps (e.g., 'Try extending the date range'), and icons (e.g., '📈') to `st.info` strings dramatically improves visual hierarchy, reduces cognitive load, and helps users recover from empty states faster.
 **Action:** When implementing empty states for Streamlit components, always use structured formatting (bold headers), actionable guidance, and visual anchors (icons).
+
+## 2026-05-15 - Enhance Regime Summary empty state with structured guidance
+**Learning:** Component-level empty states (like "No regime summary available") often appear too generic and unhelpful. Providing structured text (bold header), explicit next steps ("Try adjusting your model parameters..."), and an icon ("📊") reduces cognitive load and provides actionable paths forward for users when data is missing.
+**Action:** Always format empty states in Streamlit to include a bold header, actionable guidance for resolution, and an appropriate icon instead of relying on a single flat sentence.
