@@ -347,15 +347,23 @@ else:
         else:
             st.info("No regime summary available.")
     with eval_tabs[1]:
-        rolling_acc = evaluation.get("rolling_accuracy", [])
-        if rolling_acc:
-            st.line_chart(rolling_acc)
+        if evaluation.rolling_accuracy.empty:
+            st.info(
+                "**Not Enough Data**\n\n"
+                "Rolling accuracy series will appear once enough data is available. "
+                "Try extending the training date range.",
+                icon="📈",
+            )
         else:
             st.info("Rolling accuracy series will appear once enough data is available.")
     with eval_tabs[2]:
-        rolling_ll = evaluation.get("rolling_log_likelihood", [])
-        if rolling_ll:
-            st.line_chart(rolling_ll)
+        if evaluation.rolling_log_likelihood.empty:
+            st.info(
+                "**Not Enough Data**\n\n"
+                "Rolling log-likelihood requires additional observations. "
+                "Try extending the training date range.",
+                icon="📊",
+            )
         else:
             st.info("Rolling log-likelihood requires additional observations.")
 
