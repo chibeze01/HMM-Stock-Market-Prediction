@@ -344,7 +344,12 @@ else:
             regime_df = pd.DataFrame(regime_data)
             st.dataframe(regime_df, use_container_width=True)
         else:
-            st.info("No regime summary available.")
+            st.info(
+                "**No Regime Summary Available**\n\n"
+                "The regime summary requires a successfully trained model to generate.\n"
+                "Try training the model first to view regime characteristics.",
+                icon="📊",
+            )
     with eval_tabs[1]:
         if evaluation.rolling_accuracy.empty:
             st.info(
