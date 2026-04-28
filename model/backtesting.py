@@ -72,53 +72,39 @@ class BacktestEngine:
     def _simulate_trades(
         self, frame: pd.DataFrame, signals: np.ndarray
     ) -> tuple[list[Trade], pd.Series]:
+        # ⚡ Bolt: Replaced python for-loop with vectorized array operations over signals.
+        # Uses np.diff to find entry/exit points, completely bypassing row-by-row iteration.
         cfg = self.config
         capital = cfg.initial_capital
         equity = np.full(len(frame), capital)
         trades: list[Trade] = []
         close = frame["Close"].to_numpy()
         dates = frame.index
-        in_position = False
-        entry_idx = 0
 
-        for i in range(1, len(frame)):
-            if signals[i] == 1 and not in_position:
-                entry_idx = i
-                in_position = True
-            elif signals[i] == 0 and in_position:
-                entry_price = close[entry_idx]
-                exit_price = close[i]
-                cost = cfg.commission + cfg.slippage
-                gross_return = (exit_price - entry_price) / entry_price
-                net_return = gross_return - 2 * cost
-                trade_capital = capital * cfg.position_size
-                pnl = trade_capital * net_return
-                capital += pnl
-                trades.append(Trade(
-                    entry_date=dates[entry_idx],
-                    exit_date=dates[i],
-                    entry_price=entry_price,
-                    exit_price=exit_price,
-                    direction="long",
-                    pnl=pnl,
-                    state=0,
-                ))
-            equity[i] = capital
+        sig_mod = signals.copy()
+        sig_mod[0] = 0
+        diff = np.diff(sig_mod)
 
-        # Close open position at end
-        if in_position:
+        entry_indices = np.where(diff == 1)[0] + 1
+        exit_indices = np.where(diff == -1)[0] + 1
+
+        if len(entry_indices) > len(exit_indices):
+            exit_indices = np.append(exit_indices, len(frame) - 1)
+
+        for entry_idx, exit_idx in zip(entry_indices, exit_indices, strict=False):
             entry_price = close[entry_idx]
-            exit_price = close[-1]
+            exit_price = close[exit_idx]
             cost = cfg.commission + cfg.slippage
             gross_return = (exit_price - entry_price) / entry_price
             net_return = gross_return - 2 * cost
             trade_capital = capital * cfg.position_size
             pnl = trade_capital * net_return
             capital += pnl
-            equity[-1] = capital
+
+            equity[exit_idx:] = capital
             trades.append(Trade(
                 entry_date=dates[entry_idx],
-                exit_date=dates[-1],
+                exit_date=dates[exit_idx],
                 entry_price=entry_price,
                 exit_price=exit_price,
                 direction="long",
