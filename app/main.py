@@ -136,9 +136,7 @@ hidden_states = st.sidebar.slider(
 covariance_type = st.sidebar.selectbox(
     "Covariance Type", options=["diag", "full", "spherical", "tied"], index=0
 )
-n_iter = st.sidebar.slider(
-    "Training Iterations", min_value=100, max_value=2000, value=500, step=50
-)
+n_iter = st.sidebar.slider("Training Iterations", min_value=100, max_value=2000, value=500, step=50)
 random_state = st.sidebar.number_input("Random Seed", value=42)
 
 st.sidebar.divider()
@@ -178,6 +176,7 @@ if st.session_state.get("success_message"):
     st.session_state["success_message"] = None
 
 # ── Train ────────────────────────────────────────────────────────────────────────
+
 
 def train_pipeline(
     ticker_symbol: str,
@@ -246,9 +245,7 @@ if train_clicked:
         )
         st.rerun()
     except httpx.ConnectError:
-        st.sidebar.error(
-            f"Cannot connect to API at {API_BASE_URL}. Is the server running?"
-        )
+        st.sidebar.error(f"Cannot connect to API at {API_BASE_URL}. Is the server running?")
     except Exception as exc:  # noqa: BLE001
         logger.exception("Training failed: %s", exc)
         st.sidebar.error(f"Training failed: {exc}")
@@ -295,9 +292,7 @@ if fine_tune_clicked:
         st.session_state["success_message"] = "Fine-tuning complete."
         st.rerun()
     except httpx.ConnectError:
-        st.sidebar.error(
-            f"Cannot connect to API at {API_BASE_URL}. Is the server running?"
-        )
+        st.sidebar.error(f"Cannot connect to API at {API_BASE_URL}. Is the server running?")
     except Exception as exc:  # noqa: BLE001
         logger.exception("Fine-tuning failed: %s", exc)
         st.sidebar.error(f"Fine-tuning failed: {exc}")
@@ -344,7 +339,12 @@ else:
             regime_df = pd.DataFrame(regime_data)
             st.dataframe(regime_df, use_container_width=True)
         else:
-            st.info("No regime summary available.")
+            st.info(
+                "**No Regime Summary Available**\n\n"
+                "The regime summary requires successfully trained state combinations.\n"
+                "Try training the model with different features or extending the date range.",
+                icon="📊",
+            )
     with eval_tabs[1]:
         if evaluation.rolling_accuracy.empty:
             st.info(
@@ -377,9 +377,7 @@ else:
             st.session_state["last_prediction"] = pred
             logger.info("Generated prediction state=%s", pred["predicted_state"])
         except httpx.ConnectError:
-            st.error(
-                f"Cannot connect to API at {API_BASE_URL}. Is the server running?"
-            )
+            st.error(f"Cannot connect to API at {API_BASE_URL}. Is the server running?")
         except Exception as exc:  # noqa: BLE001
             logger.exception("Prediction failed: %s", exc)
             st.error(f"Prediction failed: {exc}")
@@ -400,19 +398,34 @@ else:
         bt_col1, bt_col2 = st.columns(2)
         with bt_col1:
             bt_commission = st.number_input(
-                "Commission (per side)", value=0.001, min_value=0.0,
-                max_value=0.1, step=0.0005, format="%.4f",
+                "Commission (per side)",
+                value=0.001,
+                min_value=0.0,
+                max_value=0.1,
+                step=0.0005,
+                format="%.4f",
             )
             bt_slippage = st.number_input(
-                "Slippage (per side)", value=0.0005, min_value=0.0,
-                max_value=0.1, step=0.0005, format="%.4f",
+                "Slippage (per side)",
+                value=0.0005,
+                min_value=0.0,
+                max_value=0.1,
+                step=0.0005,
+                format="%.4f",
             )
         with bt_col2:
             bt_position_size = st.slider(
-                "Position Size", min_value=0.1, max_value=1.0, value=1.0, step=0.1,
+                "Position Size",
+                min_value=0.1,
+                max_value=1.0,
+                value=1.0,
+                step=0.1,
             )
             bt_initial_capital = st.number_input(
-                "Initial Capital ($)", value=10_000.0, min_value=100.0, step=1000.0,
+                "Initial Capital ($)",
+                value=10_000.0,
+                min_value=100.0,
+                step=1000.0,
             )
     if st.button("Run Backtest", type="primary"):
         try:
@@ -429,7 +442,9 @@ else:
             st.session_state["backtest_result"] = result
             logger.info(
                 "Backtest complete: trades=%d sharpe=%.2f return=%.2f%%",
-                result.n_trades, result.sharpe_ratio, result.total_return * 100,
+                result.n_trades,
+                result.sharpe_ratio,
+                result.total_return * 100,
             )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Backtest failed: %s", exc)
