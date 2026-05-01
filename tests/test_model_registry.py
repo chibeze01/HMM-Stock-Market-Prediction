@@ -1,11 +1,11 @@
 """Tests for the thread-safe model registry."""
-import threading
 
-import pytest
+import threading
 
 
 def _make_entry(**kwargs):
     from api.model_registry import ModelEntry
+
     defaults = {"model": "fake_model", "ticker": "AAPL", "evaluation": {"score": 1.0}}
     defaults.update(kwargs)
     return ModelEntry(**defaults)

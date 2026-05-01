@@ -107,8 +107,12 @@ class TestTradeAndResult(unittest.TestCase):
 def _make_regime_summary():
     """Regime summary with states 0 (bullish) and 1 (bearish)."""
     return pd.DataFrame(
-        {"mean_return": [0.002, -0.001], "volatility": [0.01, 0.02],
-         "avg_close": [150.0, 148.0], "sample_count": [100, 80]},
+        {
+            "mean_return": [0.002, -0.001],
+            "volatility": [0.01, 0.02],
+            "avg_close": [150.0, 148.0],
+            "sample_count": [100, 80],
+        },
         index=pd.Index([0, 1], name="HiddenState"),
     )
 
@@ -254,8 +258,12 @@ def _make_backtest_inputs(n=100):
     # 2 states: 0=bullish, 1=bearish alternating in blocks
     hidden_states = np.array([0 if i < n // 2 else 1 for i in range(n)])
     regime_summary = pd.DataFrame(
-        {"mean_return": [0.001, -0.001], "volatility": [0.01, 0.015],
-         "avg_close": [105.0, 100.0], "sample_count": [n // 2, n // 2]},
+        {
+            "mean_return": [0.001, -0.001],
+            "volatility": [0.01, 0.015],
+            "avg_close": [105.0, 100.0],
+            "sample_count": [n // 2, n // 2],
+        },
         index=pd.Index([0, 1], name="HiddenState"),
     )
     return frame, hidden_states, regime_summary
@@ -292,7 +300,9 @@ class TestBacktestEngineRun(unittest.TestCase):
         engine = BacktestEngine()
         frame, hidden_states, regime_summary = _make_backtest_inputs()
         result = engine.run(frame, hidden_states, regime_summary)
-        expected_benchmark = (frame["Close"].iloc[-1] - frame["Close"].iloc[0]) / frame["Close"].iloc[0]
+        expected_benchmark = (frame["Close"].iloc[-1] - frame["Close"].iloc[0]) / frame[
+            "Close"
+        ].iloc[0]
         self.assertAlmostEqual(result.benchmark_return, expected_benchmark, places=4)
 
 
