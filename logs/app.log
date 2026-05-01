@@ -1,0 +1,95 @@
+2026-05-01 11:14:22,144 | INFO | httpx | HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,161 | INFO | HMMStockPredictor | Training HMM with 195 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,163 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,163 | INFO | HMMStockPredictor | Training finished. LogLik=1557.72 Samples=195
+2026-05-01 11:14:22,173 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=176 loglike_points=176
+2026-05-01 11:14:22,177 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,190 | INFO | HMMStockPredictor | Training HMM with 195 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,192 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,193 | INFO | HMMStockPredictor | Training finished. LogLik=1557.72 Samples=195
+2026-05-01 11:14:22,201 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=176 loglike_points=176
+2026-05-01 11:14:22,204 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,218 | INFO | HMMStockPredictor | Training HMM with 195 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,220 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,220 | INFO | HMMStockPredictor | Training finished. LogLik=1557.72 Samples=195
+2026-05-01 11:14:22,228 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=176 loglike_points=176
+2026-05-01 11:14:22,232 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,237 | INFO | httpx | HTTP Request: POST http://testserver/predict "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,251 | INFO | HMMStockPredictor | Training HMM with 195 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,253 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,253 | INFO | HMMStockPredictor | Training finished. LogLik=1557.72 Samples=195
+2026-05-01 11:14:22,262 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=176 loglike_points=176
+2026-05-01 11:14:22,265 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,275 | INFO | model.utils | Merged 2 preprocessed batches. Total rows=390
+2026-05-01 11:14:22,275 | INFO | HMMStockPredictor | Fine-tuning with 390 new samples retain_history=True
+2026-05-01 11:14:22,275 | INFO | HMMStockPredictor | Training HMM with 585 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,277 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,278 | INFO | HMMStockPredictor | Training finished. LogLik=4668.70 Samples=585
+2026-05-01 11:14:22,286 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=371 loglike_points=371
+2026-05-01 11:14:22,289 | INFO | httpx | HTTP Request: POST http://testserver/fine-tune "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,300 | INFO | httpx | HTTP Request: POST http://testserver/predict "HTTP/1.1 404 Not Found"
+2026-05-01 11:14:22,309 | INFO | httpx | HTTP Request: POST http://testserver/fine-tune "HTTP/1.1 404 Not Found"
+2026-05-01 11:14:22,318 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 422 Unprocessable Entity"
+2026-05-01 11:14:22,331 | INFO | HMMStockPredictor | Training HMM with 195 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,333 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,334 | INFO | HMMStockPredictor | Training finished. LogLik=1557.72 Samples=195
+2026-05-01 11:14:22,342 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=176 loglike_points=176
+2026-05-01 11:14:22,345 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,349 | INFO | httpx | HTTP Request: GET http://testserver/models "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,362 | INFO | HMMStockPredictor | Training HMM with 195 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,364 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,365 | INFO | HMMStockPredictor | Training finished. LogLik=1557.72 Samples=195
+2026-05-01 11:14:22,373 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=176 loglike_points=176
+2026-05-01 11:14:22,376 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,380 | INFO | httpx | HTTP Request: DELETE http://testserver/models/35fe4fe0-7bd5-4bc7-94f1-8f16ea0fd6dc "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,384 | INFO | httpx | HTTP Request: POST http://testserver/predict "HTTP/1.1 404 Not Found"
+2026-05-01 11:14:22,393 | INFO | httpx | HTTP Request: DELETE http://testserver/models/nonexistent-id "HTTP/1.1 404 Not Found"
+2026-05-01 11:14:22,408 | INFO | HMMStockPredictor | Training HMM with 195 samples and config=HMMConfig(n_hidden_states=3, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,409 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 3 states
+2026-05-01 11:14:22,410 | INFO | HMMStockPredictor | Training finished. LogLik=1557.72 Samples=195
+2026-05-01 11:14:22,418 | INFO | model.evaluation | Evaluation completed: regimes=3 accuracy_points=176 loglike_points=176
+2026-05-01 11:14:22,421 | INFO | httpx | HTTP Request: POST http://testserver/train "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,425 | INFO | httpx | HTTP Request: GET http://testserver/evaluation/de0796c3-a5c6-4554-8666-807cb01b5d4a "HTTP/1.1 200 OK"
+2026-05-01 11:14:22,434 | INFO | httpx | HTTP Request: GET http://testserver/evaluation/nonexistent-id "HTTP/1.1 404 Not Found"
+2026-05-01 11:14:22,492 | INFO | model.backtesting | Backtest complete: trades=0 sharpe=0.00 max_dd=0.00% return=0.00%
+2026-05-01 11:14:22,498 | INFO | model.backtesting | Backtest complete: trades=1 sharpe=-1.60 max_dd=-9.12% return=-9.12%
+2026-05-01 11:14:22,505 | INFO | model.backtesting | Backtest complete: trades=1 sharpe=-1.60 max_dd=-9.12% return=-9.12%
+2026-05-01 11:14:22,511 | INFO | model.backtesting | Backtest complete: trades=1 sharpe=-1.60 max_dd=-9.12% return=-9.12%
+2026-05-01 11:14:22,531 | INFO | HMMStockPredictor | Training HMM with 45 samples and config=HMMConfig(n_hidden_states=4, n_iter=500, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,540 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 4 states
+2026-05-01 11:14:22,541 | INFO | HMMStockPredictor | Training finished. LogLik=353.16 Samples=45
+2026-05-01 11:14:22,548 | INFO | model.backtesting | Backtest complete: trades=3 sharpe=4.83 max_dd=0.00% return=2.90%
+2026-05-01 11:14:22,549 | INFO | model.backtesting | Walk-forward split 1/2: trades=3 sharpe=4.83
+2026-05-01 11:14:22,558 | INFO | HMMStockPredictor | Training HMM with 45 samples and config=HMMConfig(n_hidden_states=4, n_iter=500, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,567 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 4 states
+2026-05-01 11:14:22,568 | INFO | HMMStockPredictor | Training finished. LogLik=352.75 Samples=45
+2026-05-01 11:14:22,575 | INFO | model.backtesting | Backtest complete: trades=4 sharpe=-0.55 max_dd=-1.12% return=-0.21%
+2026-05-01 11:14:22,575 | INFO | model.backtesting | Walk-forward split 2/2: trades=4 sharpe=-0.55
+2026-05-01 11:14:22,579 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,581 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,581 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-05-01 11:14:22,586 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,587 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,587 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-05-01 11:14:22,591 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,592 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,593 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-05-01 11:14:22,602 | INFO | HMMStockPredictor | Training HMM with 79 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,603 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,604 | INFO | HMMStockPredictor | Training finished. LogLik=596.70 Samples=79
+2026-05-01 11:14:22,612 | INFO | model.evaluation | Evaluation completed: regimes=2 accuracy_points=75 loglike_points=75
+2026-05-01 11:14:22,614 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,615 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,615 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-05-01 11:14:22,615 | INFO | HMMStockPredictor | Fine-tuning with 30 new samples retain_history=True
+2026-05-01 11:14:22,616 | INFO | HMMStockPredictor | Training HMM with 90 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,617 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,617 | INFO | HMMStockPredictor | Training finished. LogLik=-112.18 Samples=90
+2026-05-01 11:14:22,619 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=42)
+2026-05-01 11:14:22,620 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,620 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60
+2026-05-01 11:14:22,621 | INFO | HMMStockPredictor | Saved HMM model to /tmp/tmpfgre4ebj/model.pkl
+2026-05-01 11:14:22,622 | INFO | HMMStockPredictor | Loaded HMM model from /tmp/tmpfgre4ebj/model.pkl
+2026-05-01 11:14:22,623 | INFO | HMMStockPredictor | Training HMM with 60 samples and config=HMMConfig(n_hidden_states=2, n_iter=50, covariance_type='diag', random_state=7)
+2026-05-01 11:14:22,624 | INFO | model.simple_hmm | Fallback GaussianHMM fitted with 2 states
+2026-05-01 11:14:22,625 | INFO | HMMStockPredictor | Training finished. LogLik=-78.69 Samples=60

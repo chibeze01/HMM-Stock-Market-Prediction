@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -69,62 +69,70 @@ class BacktestEngine:
     ) -> np.ndarray:
         return np.isin(hidden_states, list(long_states)).astype(int)
 
+    # ⚡ Bolt: Replaced row-by-row iteration in Python with vectorized array operations.
+    # Uses `np.diff` to identify entry/exit indices and evaluates returns using
+    # fast array calculations, yielding significant speedups for long backtests.
     def _simulate_trades(
         self, frame: pd.DataFrame, signals: np.ndarray
     ) -> tuple[list[Trade], pd.Series]:
         cfg = self.config
-        capital = cfg.initial_capital
+        capital = float(cfg.initial_capital)
         equity = np.full(len(frame), capital)
-        trades: list[Trade] = []
-        close = frame["Close"].to_numpy()
         dates = frame.index
-        in_position = False
-        entry_idx = 0
+        close = frame["Close"].to_numpy()
+        n_days = len(frame)
 
-        for i in range(1, len(frame)):
-            if signals[i] == 1 and not in_position:
-                entry_idx = i
-                in_position = True
-            elif signals[i] == 0 and in_position:
-                entry_price = close[entry_idx]
-                exit_price = close[i]
-                cost = cfg.commission + cfg.slippage
-                gross_return = (exit_price - entry_price) / entry_price
-                net_return = gross_return - 2 * cost
-                trade_capital = capital * cfg.position_size
-                pnl = trade_capital * net_return
-                capital += pnl
-                trades.append(Trade(
-                    entry_date=dates[entry_idx],
-                    exit_date=dates[i],
-                    entry_price=entry_price,
-                    exit_price=exit_price,
-                    direction="long",
-                    pnl=pnl,
-                    state=0,
-                ))
-            equity[i] = capital
+        if n_days <= 1:
+            return [], pd.Series(equity, index=dates)
 
-        # Close open position at end
-        if in_position:
-            entry_price = close[entry_idx]
-            exit_price = close[-1]
-            cost = cfg.commission + cfg.slippage
-            gross_return = (exit_price - entry_price) / entry_price
-            net_return = gross_return - 2 * cost
-            trade_capital = capital * cfg.position_size
-            pnl = trade_capital * net_return
-            capital += pnl
-            equity[-1] = capital
-            trades.append(Trade(
-                entry_date=dates[entry_idx],
-                exit_date=dates[-1],
-                entry_price=entry_price,
-                exit_price=exit_price,
+        # Ensure mask is strictly 1 or 0 and we don't enter on day 0
+        mask = (signals == 1).astype(int)
+        mask[0] = 0
+
+        diff = np.diff(mask, prepend=0)
+        entries = np.where(diff == 1)[0]
+        exits = np.where(diff == -1)[0]
+
+        if len(entries) == 0:
+            return [], pd.Series(equity, index=dates)
+
+        if len(entries) > len(exits):
+            exits = np.append(exits, n_days - 1)
+
+        n_trades = len(entries)
+
+        entry_prices = close[entries]
+        exit_prices = close[exits]
+
+        cost = cfg.commission + cfg.slippage
+        gross_returns = (exit_prices - entry_prices) / entry_prices
+        net_returns = gross_returns - 2 * cost
+
+        multipliers = 1 + cfg.position_size * net_returns
+        capitals_after = capital * np.cumprod(multipliers)
+
+        capitals_before = np.empty(n_trades, dtype=float)
+        capitals_before[0] = capital
+        if n_trades > 1:
+            capitals_before[1:] = capitals_after[:-1]
+
+        pnls = capitals_before * cfg.position_size * net_returns
+
+        trades = [None] * n_trades
+        for i in range(n_trades):
+            trades[i] = Trade(
+                entry_date=dates[entries[i]],
+                exit_date=dates[exits[i]],
+                entry_price=entry_prices[i],
+                exit_price=exit_prices[i],
                 direction="long",
-                pnl=pnl,
+                pnl=pnls[i],
                 state=0,
-            ))
+            )
+
+            start_idx = exits[i]
+            end_idx = exits[i + 1] if i + 1 < n_trades else n_days
+            equity[start_idx:end_idx] = capitals_after[i]
 
         return trades, pd.Series(equity, index=dates)
 
@@ -162,11 +170,16 @@ class BacktestEngine:
         sharpe = self._sharpe_ratio(daily_returns)
         max_dd = self._max_drawdown(equity_curve)
         win_rate = sum(1 for t in trades if t.pnl > 0) / n_trades if n_trades else 0.0
-        benchmark_return = (frame["Close"].iloc[-1] - frame["Close"].iloc[0]) / frame["Close"].iloc[0]
+        benchmark_return = (frame["Close"].iloc[-1] - frame["Close"].iloc[0]) / frame["Close"].iloc[
+            0
+        ]
 
         logger.info(
             "Backtest complete: trades=%d sharpe=%.2f max_dd=%.2f%% return=%.2f%%",
-            n_trades, sharpe, max_dd * 100, total_return * 100,
+            n_trades,
+            sharpe,
+            max_dd * 100,
+            total_return * 100,
         )
         return BacktestResult(
             trades=trades,
@@ -210,9 +223,7 @@ def walk_forward_backtest(
 
     total_needed = wf_cfg.n_splits * wf_cfg.test_size + wf_cfg.train_size
     if len(raw_data) < total_needed:
-        raise ValueError(
-            f"Insufficient data: need {total_needed} rows, have {len(raw_data)}."
-        )
+        raise ValueError(f"Insufficient data: need {total_needed} rows, have {len(raw_data)}.")
 
     results: list[BacktestResult] = []
     engine = BacktestEngine(bt_cfg)
@@ -232,11 +243,18 @@ def walk_forward_backtest(
         predictor.train(train_data.features)
 
         hidden_states = predictor.model.predict(test_data.features)
-        regime_summary = compute_regime_summary(train_data.frame, predictor.model.predict(train_data.features))
+        regime_summary = compute_regime_summary(
+            train_data.frame, predictor.model.predict(train_data.features)
+        )
 
         result = engine.run(test_data.frame, hidden_states, regime_summary)
         results.append(result)
-        logger.info("Walk-forward split %d/%d: trades=%d sharpe=%.2f",
-                     split + 1, wf_cfg.n_splits, result.n_trades, result.sharpe_ratio)
+        logger.info(
+            "Walk-forward split %d/%d: trades=%d sharpe=%.2f",
+            split + 1,
+            wf_cfg.n_splits,
+            result.n_trades,
+            result.sharpe_ratio,
+        )
 
     return results
