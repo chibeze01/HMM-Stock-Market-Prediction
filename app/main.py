@@ -13,9 +13,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from model.backtesting import (
     BacktestConfig,
     BacktestEngine,
-    BacktestResult,
-    WalkForwardConfig,
-    walk_forward_backtest,
 )
 from model.evaluation import EvaluationBundle, run_evaluation
 from model.hmm import HMMConfig, HMMStockPredictor, TrainingSummary
@@ -344,7 +341,12 @@ else:
             regime_df = pd.DataFrame(regime_data)
             st.dataframe(regime_df, use_container_width=True)
         else:
-            st.info("No regime summary available.")
+            st.info(
+                "**No Regime Summary Available**\n\n"
+                "The model hasn't generated a regime summary yet. Ensure the model has "
+                "been trained successfully with sufficient data.",
+                icon="📊",
+            )
     with eval_tabs[1]:
         if evaluation.rolling_accuracy.empty:
             st.info(
@@ -394,6 +396,13 @@ else:
             }
         ).set_index("State")
         st.bar_chart(prob_df)
+    else:
+        st.info(
+            "**No Prediction Available**\n\n"
+            "Click **Predict Next Regime** above to forecast the current market state "
+            "based on the latest data.",
+            icon="🔮",
+        )
 
     st.subheader("Backtesting")
     with st.expander("Backtest Settings", expanded=False):
@@ -462,6 +471,13 @@ else:
                 for t in result.trades
             ]
             st.dataframe(pd.DataFrame(trade_rows), use_container_width=True)
+    else:
+        st.info(
+            "**Backtest Not Run**\n\n"
+            "Configure your settings above and click **Run Backtest** to simulate "
+            "trading performance using the trained model.",
+            icon="📊",
+        )
 
     st.subheader("Recent Data")
     st.dataframe(dataset.frame.tail(10), use_container_width=True)

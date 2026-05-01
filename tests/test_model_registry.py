@@ -1,8 +1,6 @@
 """Tests for the thread-safe model registry."""
 import threading
 
-import pytest
-
 
 def _make_entry(**kwargs):
     from api.model_registry import ModelEntry
