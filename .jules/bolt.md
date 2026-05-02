@@ -29,3 +29,6 @@
 ## 2024-05-26 - Vectorize HMM transition estimation
 **Learning:** Estimating state transitions using a Python `for` loop and zip (e.g. `for prev, nxt in zip(...)`) creates significant overhead, especially for long sequences, acting as a performance bottleneck.
 **Action:** Use `np.bincount` on flattened transition indices. For any sequence of integer states (0 to K-1), computing the 1D index array `labels[:-1] * K + labels[1:]` and counting frequencies with `np.bincount` converts an O(N) Python loop into an O(N) C-level operation, giving >50x speedups.
+## 2024-05-30 - Vectorize trade simulation arrays using np.diff
+**Learning:** Backtesting simulations using Python row-by-row iteration in a `for` loop on sequence data introduces unnecessary bottlenecking, especially on long histories. Explicit loop state tracking like `in_position` over the array is highly inefficient.
+**Action:** Replace `for` loop iteration with `np.diff` on state/signal arrays. Using `np.where(np.diff(signals))` quickly finds entry and exit indices. Then use NumPy array assignments/slicing (e.g. `equity[entry:exit]`) coupled with vectorized calculations to optimize performance over the time dimension.
